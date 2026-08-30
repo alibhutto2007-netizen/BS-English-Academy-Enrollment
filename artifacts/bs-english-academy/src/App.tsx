@@ -29,6 +29,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { SiInstagram, SiTiktok } from 'react-icons/si';
 import {
   getGetDashboardSummaryQueryKey,
   getGetStudentQueryKey,
@@ -218,6 +219,42 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function SocialLink({ href, label, children }: { href: string; label: string; children: ReactNode }) {
+  return (
+    <a className="rail-social-link" href={href} target="_blank" rel="noreferrer" aria-label={label}>
+      {children}
+    </a>
+  );
+}
+
+function PublicFooter() {
+  return (
+    <div className="rail-footer">
+      <div className="rail-credit">
+        <span>Developed by <strong>Muhammad Ali</strong></span>
+        <small>Contact for Customized Web Application || Games</small>
+        <SocialLink href="https://www.instagram.com/muhammad_ali_bhutto2076/" label="Muhammad Ali on Instagram">
+          <SiInstagram size={15} aria-hidden="true" />
+          <span>@muhammad_ali_2076</span>
+        </SocialLink>
+      </div>
+      <div className="rail-socials" aria-label="BS English Virtual Academy social links">
+        <span className="rail-social-label">Follow the academy</span>
+        <div className="rail-social-row">
+          <SocialLink href="https://www.instagram.com/bs746151/" label="BS English Virtual Academy on Instagram">
+            <SiInstagram size={16} aria-hidden="true" />
+            <span>Instagram</span>
+          </SocialLink>
+          <SocialLink href="https://www.tiktok.com/@suhailalee786" label="BS English Virtual Academy on TikTok">
+            <SiTiktok size={16} aria-hidden="true" />
+            <span>TikTok</span>
+          </SocialLink>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type FieldProps = { label: string; htmlFor: string; error?: string; children: ReactNode };
 
 function Field({ label, htmlFor, error, children }: FieldProps) {
@@ -322,9 +359,12 @@ function EnrollmentPage() {
           <h1>Start with<br /><em>the right words.</em></h1>
           <p>Tell us a little about the learner. We’ll help you choose a comfortable class rhythm and a clear path forward.</p>
         </div>
-        <div className="rail-note">
-          <ShieldCheck size={17} />
-          <span>Your details are reviewed by the academy team with care. No queues, no paper file to carry.</span>
+        <div className="rail-bottom">
+          <div className="rail-note">
+            <ShieldCheck size={17} />
+            <span>Your details are reviewed by the academy team with care. No queues, no paper file to carry.</span>
+          </div>
+          <PublicFooter />
         </div>
       </aside>
       <main className="enroll-main">

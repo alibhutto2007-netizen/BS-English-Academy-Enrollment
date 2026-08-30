@@ -205,8 +205,19 @@
 .rail-copy h1 { font-family: var(--app-font-serif); font-size: clamp(2.7rem, 5.3vw, 5.4rem); line-height: .94; letter-spacing: -.065em; margin: 0 0 1.3rem; }
 .rail-copy h1 em { font-style: normal; color: hsl(var(--primary)); }
 .rail-copy p { line-height: 1.65; max-width: 385px; color: hsl(var(--sidebar-foreground) / .7); font-size: .95rem; }
+.rail-bottom { position: relative; z-index: 1; display: grid; gap: 1.15rem; }
 .rail-note { position: relative; z-index: 1; display: flex; gap: .65rem; align-items: flex-start; color: hsl(var(--sidebar-foreground) / .62); font-size: .75rem; max-width: 350px; }
 .rail-note svg { flex: none; color: hsl(var(--primary)); margin-top: .15rem; }
+.rail-footer { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem 1.75rem; padding-top: 1rem; border-top: 1px solid hsl(var(--sidebar-foreground) / .13); color: hsl(var(--sidebar-foreground) / .64); }
+.rail-credit { display: grid; gap: .18rem; font-size: .72rem; }
+.rail-credit strong { color: hsl(var(--sidebar-foreground) / .92); }
+.rail-credit small { color: hsl(var(--sidebar-foreground) / .48); font-size: .64rem; }
+.rail-socials { display: grid; gap: .35rem; }
+.rail-social-label { color: hsl(var(--sidebar-foreground) / .45); font: 700 .58rem var(--app-font-mono); letter-spacing: .11em; text-transform: uppercase; }
+.rail-social-row { display: flex; flex-wrap: wrap; gap: .55rem; }
+.rail-social-link { display: inline-flex; align-items: center; gap: .38rem; width: fit-content; color: hsl(var(--sidebar-foreground) / .7); font-size: .68rem; text-decoration: none; transition: color .18s ease, transform .18s ease; }
+.rail-social-link:hover { color: hsl(var(--primary)); transform: translateY(-1px); }
+.rail-social-link svg { flex: none; color: hsl(var(--primary)); }
 .enroll-main { min-width: 0; padding: clamp(1.1rem, 4vw, 4rem); display: flex; flex-direction: column; }
 .top-line { display: flex; justify-content: flex-end; gap: .55rem; align-items: center; margin-bottom: clamp(2rem, 5vw, 4.2rem); }
 .top-line a { color: hsl(var(--muted-foreground)); font-size: .79rem; font-weight: 600; text-decoration: none; }
@@ -350,6 +361,7 @@
   .top-line { margin-bottom: 2rem; }
   .step-node span { display: none; }
   .stepper { margin: 1.4rem 0 1.6rem; }
+  .rail-footer { align-items: flex-start; flex-direction: column; gap: .8rem; }
   .auth-card { grid-template-columns: 1fr; min-height: auto; }
   .auth-aside { min-height: 245px; }
   .auth-aside h1 { margin: 2rem 0 .5rem; font-size: 2.5rem; }
