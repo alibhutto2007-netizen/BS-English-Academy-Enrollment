@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BS English Virtual Academy enrollment and administration API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: students
+    description: Student enrollment records
+  - name: dashboard
+    description: Academy dashboard insights
 paths:
   /healthz:
     get:
@@ -24,7 +28,152 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List enrolled students
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Batch"
+        - $ref: "#/components/parameters/Time"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Students matching the filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Create an enrollment record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentInput"
+      responses:
+        "201":
+          description: Enrollment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get one enrollment
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Enrollment record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update an enrollment record
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentUpdate"
+      responses:
+        "200":
+          description: Updated enrollment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteStudent
+      tags: [students]
+      summary: Delete an enrollment record
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "204":
+          description: Enrollment deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get enrollment summary
+      responses:
+        "200":
+          description: Totals and grouped enrollment counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
 components:
+  parameters:
+    StudentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Search:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+    Batch:
+      name: batch
+      in: query
+      required: false
+      schema:
+        type: string
+    Time:
+      name: time
+      in: query
+      required: false
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: 1
+        maximum: 500
+        default: 500
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Record not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +182,101 @@ components:
           type: string
       required:
         - status
+    StudentInput:
+      type: object
+      required:
+        - studentName
+        - currentClass
+        - lastAcademy
+        - schoolCollege
+        - contactNumber
+        - dateOfBirth
+        - dateOfAdmission
+        - gender
+        - homeAddress
+        - courseSubject
+        - batch
+        - time
+      properties:
+        studentName:
+          type: string
+          minLength: 2
+          maxLength: 120
+        currentClass:
+          type: string
+          maxLength: 80
+        lastAcademy:
+          type: string
+          maxLength: 160
+        schoolCollege:
+          type: string
+          maxLength: 160
+        contactNumber:
+          type: string
+          maxLength: 40
+        dateOfBirth:
+          type: string
+          format: date
+        dateOfAdmission:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [Female, Male, Other]
+        homeAddress:
+          type: string
+          maxLength: 500
+        courseSubject:
+          type: string
+          maxLength: 120
+        batch:
+          type: string
+          enum: [Basic, Advance, Medium]
+        time:
+          type: string
+          enum: ["2:00 PM - 3:00 PM", "3:00 PM - 4:00 PM", "4:00 PM - 5:00 PM", "5:00 PM - 6:00 PM"]
+    StudentUpdate:
+      allOf:
+        - $ref: "#/components/schemas/StudentInput"
+    Student:
+      allOf:
+        - $ref: "#/components/schemas/StudentInput"
+        - type: object
+          required: [id, createdAt]
+          properties:
+            id:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+    BatchCount:
+      type: object
+      required: [label, count]
+      properties:
+        label:
+          type: string
+        count:
+          type: number
+    DashboardSummary:
+      type: object
+      required: [totalStudents, todayAdmissions, batchCounts, timeCounts]
+      properties:
+        totalStudents:
+          type: number
+        todayAdmissions:
+          type: number
+        batchCounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchCount"
+        timeCounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchCount"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
 

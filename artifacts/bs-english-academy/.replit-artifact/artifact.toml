@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "BS English Academy"
+description = "A polished enrollment and admin management app for BS English Virtual Academy Larkana, with batch-aware admission forms, downloadable slips, student analytics, and spreadsheet exports."
+version = "1.0.0"
+id = "artifacts/bs-english-academy"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24022
+
+[services.development]
+run = "pnpm --filter @workspace/bs-english-academy run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bs-english-academy", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bs-english-academy/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24022"
+BASE_PATH = "/"

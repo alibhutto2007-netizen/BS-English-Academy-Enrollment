@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-labelledby="title desc">
+  <title id="title">BS English Virtual Academy</title>
+  <desc id="desc">Gold and black academy crest mark</desc>
+  <rect width="220" height="220" rx="34" fill="#161d2d"/>
+  <path d="M110 30 174 48v52c0 45-29 72-64 90-35-18-64-45-64-90V48z" fill="none" stroke="#f3c536" stroke-width="6"/>
+  <path d="M110 46 158 60v40c0 33-20 55-48 71-28-16-48-38-48-71V60z" fill="#f3c536"/>
+  <path d="M82 92h56M82 108h56M89 124h42" stroke="#161d2d" stroke-width="8" stroke-linecap="round"/>
+  <path d="m110 68 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2z" fill="#161d2d"/>
+  <text x="110" y="199" text-anchor="middle" fill="#f3c536" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="2">BS ENGLISH</text>
+</svg>
