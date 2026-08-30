@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { GetDashboardSummaryResponse } from "@workspace/api-zod";
 import { supabase } from "../lib/supabase";
 import { requireAdmin } from "../middlewares/require-admin";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -10,6 +11,10 @@ router.get("/dashboard/summary", requireAdmin, async (_req, res) => {
     .from("students")
     .select("batch,time,date_of_admission");
   if (error) {
+    logger.error(
+      { supabase: { code: error.code, message: error.message, details: error.details, hint: error.hint } },
+      "Unable to load dashboard summary from Supabase",
+    );
     res.status(503).json({ error: "Unable to load dashboard summary." });
     return;
   }

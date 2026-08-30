@@ -13,6 +13,7 @@ import {
 } from "@workspace/api-zod";
 import { supabase } from "../lib/supabase";
 import { requireAdmin } from "../middlewares/require-admin";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -80,6 +81,10 @@ router.get("/students", requireAdmin, async (req, res) => {
 
   const { data, error } = await query;
   if (error) {
+    logger.error(
+      { supabase: { code: error.code, message: error.message, details: error.details, hint: error.hint } },
+      "Unable to load students from Supabase",
+    );
     res.status(503).json({ error: "Unable to load students from Supabase." });
     return;
   }
@@ -99,6 +104,12 @@ router.post("/students", async (req, res) => {
     .single();
 
   if (error || !data) {
+    if (error) {
+      logger.error(
+        { supabase: { code: error.code, message: error.message, details: error.details, hint: error.hint } },
+        "Unable to save enrollment to Supabase",
+      );
+    }
     res.status(503).json({ error: "Unable to save enrollment to Supabase." });
     return;
   }
