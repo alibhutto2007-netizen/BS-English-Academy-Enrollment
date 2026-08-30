@@ -172,6 +172,10 @@
 .academy-input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .13); outline: none; }
 .academy-input::placeholder { color: hsl(var(--muted-foreground)); }
 .academy-input.invalid { border-color: hsl(var(--destructive)); }
+.date-picker-trigger, .form-select-trigger { min-height: 44px; height: auto; justify-content: space-between; text-align: left; font-weight: 400; }
+.date-picker-trigger > svg, .form-select-trigger > svg { color: hsl(var(--muted-foreground)); flex: none; }
+.date-picker-placeholder { color: hsl(var(--muted-foreground)); }
+.field-note { color: hsl(var(--muted-foreground)); font-size: .72rem; margin: .75rem 0 0; }
 .academy-label { display: block; font-size: .77rem; font-weight: 700; letter-spacing: .025em; margin-bottom: .38rem; color: hsl(var(--foreground)); }
 .academy-help { font-size: .73rem; color: hsl(var(--destructive)); margin-top: .3rem; }
 .academy-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: .7rem; padding: .72rem 1rem; font-size: .85rem; font-weight: 700; transition: transform .18s ease, background-color .18s ease, border-color .18s ease, color .18s ease; }

@@ -24,6 +24,8 @@ Enrollment and admissions management for BS English Virtual Academy Larkana.
 ## Where things live
 
 - `artifacts/bs-english-academy/src/App.tsx` — public enrollment flow, Clerk screens, protected admin desk, analytics, filters, editing, deletion, and CSV export.
+- `artifacts/bs-english-academy/src/components/academy-form-controls.tsx` — reusable sanitized name/number inputs, shadcn date picker, and accessible selects.
+- `artifacts/bs-english-academy/src/lib/input-sanitizers.ts` — title-case name, numeric, phone, and local-date utilities.
 - `artifacts/bs-english-academy/src/index.css` — academy visual system, responsive layout, dark mode, and Clerk styling layer.
 - `artifacts/api-server/src/routes/students.ts` — public create plus authenticated student CRUD.
 - `artifacts/api-server/src/routes/dashboard.ts` — authenticated summary analytics.
@@ -34,6 +36,7 @@ Enrollment and admissions management for BS English Virtual Academy Larkana.
 ## Architecture decisions
 
 - Public enrollment submission does not require an account; only the internal admissions desk is protected by Clerk.
+- The public enrollment form uses one React Hook Form context with Zod validation so step validation, submission validation, and field errors share the same rules.
 - Supabase is used directly for persistence because the product needs a hosted student record store and the user selected Supabase.
 - The API maps friendly camelCase API fields to snake_case Supabase columns so the frontend contract stays consistent.
 - CSV is used for spreadsheet export because it opens directly in Excel without adding a heavy workbook dependency.

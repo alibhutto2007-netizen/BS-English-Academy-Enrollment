@@ -1,5 +1,8 @@
 import { Fragment, type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import {
   ArrowLeft,
   ArrowRight,
@@ -50,14 +53,16 @@ import {
 } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
+import { DatePickerField, FormSelect, NameInput, NumericInput } from '@/components/academy-form-controls';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Link, Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
+import { isValidDateValue, parseLocalDate, sanitizeName, sanitizePhone, toLocalDateValue } from '@/lib/input-sanitizers';
 
 const queryClient = new QueryClient();
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = toLocalDateValue(new Date());
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const academyLogo = `${basePath}/logo.svg`;
 const clerkPubKey = publishableKeyFromHost(
@@ -67,6 +72,23 @@ const clerkPubKey = publishableKeyFromHost(
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const BATCHES = ['Basic', 'Advance', 'Medium'] as const;
 const TIMES = ['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'] as const;
+const BATCH_TIMES: Record<(typeof BATCHES)[number], readonly (typeof TIMES)[number][]> = {
+  Basic: ['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM'],
+  Medium: ['3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM'],
+  Advance: ['4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'],
+};
+const COURSE_OPTIONS = [
+  { value: 'English Language', label: 'English Language' },
+  { value: 'Spoken English', label: 'Spoken English' },
+  { value: 'Grammar & Writing', label: 'Grammar & Writing' },
+  { value: 'IELTS Preparation', label: 'IELTS Preparation' },
+  { value: 'Other Subject', label: 'Other Subject' },
+];
+const GENDER_OPTIONS = [
+  { value: 'Female', label: 'Female' },
+  { value: 'Male', label: 'Male' },
+  { value: 'Other', label: 'Other' },
+];
 
 const EMPTY_FORM: StudentInput = {
   studentName: '',
@@ -82,6 +104,22 @@ const EMPTY_FORM: StudentInput = {
   batch: 'Basic',
   time: '2:00 PM - 3:00 PM',
 };
+
+const dateValueSchema = z.string().refine(isValidDateValue, 'Choose a valid date.');
+const enrollmentSchema = z.object({
+  studentName: z.string().trim().min(2, 'Please enter the student’s full name.').max(120, 'Name is too long.'),
+  currentClass: z.string().trim().min(1, 'Please add the current class.').max(80, 'Class is too long.'),
+  lastAcademy: z.string().trim().min(1, 'Please add the last academy.').max(160, 'Academy name is too long.'),
+  schoolCollege: z.string().trim().min(1, 'Please add the school or college.').max(160, 'Institution name is too long.'),
+  contactNumber: z.string().min(7, 'Please enter a valid contact number.').max(15, 'Contact number is too long.'),
+  dateOfBirth: dateValueSchema.refine((value) => value <= TODAY, 'Date of birth cannot be in the future.'),
+  dateOfAdmission: dateValueSchema,
+  gender: z.enum(['Female', 'Male', 'Other']),
+  homeAddress: z.string().trim().min(1, 'Please add the home address.').max(500, 'Address is too long.'),
+  courseSubject: z.string().trim().min(1, 'Please choose a course subject.').max(120, 'Course subject is too long.'),
+  batch: z.enum(['Basic', 'Advance', 'Medium']),
+  time: z.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM']),
+});
 
 const clerkAppearance = {
   theme: shadcn,
@@ -194,56 +232,63 @@ function Field({ label, htmlFor, error, children }: FieldProps) {
 
 function EnrollmentPage() {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<StudentInput>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<Student | null>(null);
+  const [serverError, setServerError] = useState('');
   const createStudent = useCreateStudent();
+  const {
+    control,
+    register,
+    watch,
+    setValue,
+    trigger,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<StudentInput>({
+    resolver: zodResolver(enrollmentSchema),
+    defaultValues: EMPTY_FORM,
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+  });
+  const selectedBatch = watch('batch');
+  const selectedTime = watch('time');
+  const availableTimes = BATCH_TIMES[selectedBatch];
 
-  function update<K extends keyof StudentInput>(key: K, value: StudentInput[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
-    setErrors((current) => ({ ...current, [key]: '' }));
+  useEffect(() => {
+    if (!availableTimes.includes(selectedTime)) {
+      setValue('time', availableTimes[0], { shouldValidate: true, shouldDirty: true });
+    }
+  }, [availableTimes, selectedTime, setValue]);
+
+  async function moveForward() {
+    const fields = step === 1
+      ? ['studentName', 'contactNumber', 'dateOfBirth', 'gender'] as const
+      : ['currentClass', 'lastAcademy', 'schoolCollege', 'homeAddress', 'courseSubject'] as const;
+    if (await trigger(fields)) setStep((current) => Math.min(3, current + 1));
   }
 
-  function validate(targetStep: number) {
-    const nextErrors: Record<string, string> = {};
-    if (targetStep === 1 || targetStep === 0) {
-      if (form.studentName.trim().length < 2) nextErrors.studentName = 'Please enter the student’s full name.';
-      if (!form.contactNumber.trim()) nextErrors.contactNumber = 'A contact number is required.';
-      if (!form.dateOfBirth) nextErrors.dateOfBirth = 'Please choose a date of birth.';
-      if (!form.gender) nextErrors.gender = 'Please choose a gender.';
-    }
-    if (targetStep === 2 || targetStep === 0) {
-      if (!form.currentClass.trim()) nextErrors.currentClass = 'Please add the current class.';
-      if (!form.lastAcademy.trim()) nextErrors.lastAcademy = 'Please add the last academy.';
-      if (!form.schoolCollege.trim()) nextErrors.schoolCollege = 'Please add the school or college.';
-      if (!form.homeAddress.trim()) nextErrors.homeAddress = 'Please add the home address.';
-      if (!form.courseSubject.trim()) nextErrors.courseSubject = 'Please add a course subject.';
-    }
-    if (targetStep === 3 || targetStep === 0) {
-      if (!form.dateOfAdmission) nextErrors.dateOfAdmission = 'Please choose an admission date.';
-      if (!form.batch) nextErrors.batch = 'Please choose a batch.';
-      if (!form.time) nextErrors.time = 'Please choose a class time.';
-    }
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  }
-
-  function moveForward() {
-    if (validate(step)) setStep((current) => Math.min(3, current + 1));
-  }
-
-  function submitEnrollment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!validate(0)) {
-      const firstError = Object.keys(errors)[0];
-      if (firstError && ['studentName', 'contactNumber', 'dateOfBirth', 'gender'].includes(firstError)) setStep(1);
-      else if (firstError) setStep(2);
-      return;
-    }
-    createStudent.mutate({ data: form }, {
+  function submitEnrollment(data: StudentInput) {
+    setServerError('');
+    const cleanData: StudentInput = {
+      ...data,
+      studentName: sanitizeName(data.studentName),
+      currentClass: data.currentClass.trim(),
+      lastAcademy: data.lastAcademy.trim(),
+      schoolCollege: data.schoolCollege.trim(),
+      contactNumber: sanitizePhone(data.contactNumber),
+      homeAddress: data.homeAddress.trim(),
+      courseSubject: data.courseSubject.trim(),
+    };
+    createStudent.mutate({ data: cleanData }, {
       onSuccess: (student) => setSubmitted(student),
-      onError: () => setErrors({ form: 'We could not save this enrollment right now. Please try again.' }),
+      onError: () => setServerError('We could not save this enrollment right now. Please try again.'),
     });
+  }
+
+  function handleInvalid(fieldErrors: Record<string, unknown>) {
+    const firstError = Object.keys(fieldErrors)[0];
+    if (['studentName', 'contactNumber', 'dateOfBirth', 'gender'].includes(firstError)) setStep(1);
+    else if (['currentClass', 'lastAcademy', 'schoolCollege', 'homeAddress', 'courseSubject'].includes(firstError)) setStep(2);
+    else if (firstError) setStep(3);
   }
 
   function downloadConfirmation() {
@@ -308,48 +353,67 @@ function EnrollmentPage() {
                   );
                 })}
               </div>
-              <form onSubmit={submitEnrollment} noValidate>
-                {errors.form && <div className="academy-help" style={{ marginBottom: '1rem' }} data-testid="error-form">{errors.form}</div>}
+              <form onSubmit={handleSubmit(submitEnrollment, handleInvalid)} noValidate>
+                {serverError && <div className="academy-help" style={{ marginBottom: '1rem' }} data-testid="error-form">{serverError}</div>}
                 {step === 1 && (
                   <div className="form-grid academy-fade-in">
                     <div className="form-span">
-                      <Field label="Student’s full name" htmlFor="studentName" error={errors.studentName}>
-                        <input id="studentName" className={`academy-input ${errors.studentName ? 'invalid' : ''}`} value={form.studentName} onChange={(event) => update('studentName', event.target.value)} placeholder="e.g. Areeba Ahmed" data-testid="input-student-name" autoComplete="name" />
-                      </Field>
+                      <Controller
+                        name="studentName"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                          <Field label="Student’s full name" htmlFor="studentName" error={fieldState.error?.message}>
+                            <NameInput id="studentName" className={`academy-input ${fieldState.error ? 'invalid' : ''}`} value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} placeholder="e.g. Areeba Ahmed" data-testid="input-student-name" />
+                          </Field>
+                        )}
+                      />
                     </div>
-                    <Field label="Contact number" htmlFor="contactNumber" error={errors.contactNumber}>
-                      <input id="contactNumber" className={`academy-input ${errors.contactNumber ? 'invalid' : ''}`} value={form.contactNumber} onChange={(event) => update('contactNumber', event.target.value)} placeholder="03XX XXX XXXX" data-testid="input-contact-number" inputMode="tel" />
-                    </Field>
-                    <Field label="Date of birth" htmlFor="dateOfBirth" error={errors.dateOfBirth}>
-                      <input id="dateOfBirth" type="date" className={`academy-input ${errors.dateOfBirth ? 'invalid' : ''}`} value={form.dateOfBirth} onChange={(event) => update('dateOfBirth', event.target.value)} data-testid="input-date-of-birth" />
-                    </Field>
-                    <Field label="Gender" htmlFor="gender" error={errors.gender}>
-                      <select id="gender" className={`academy-input ${errors.gender ? 'invalid' : ''}`} value={form.gender} onChange={(event) => update('gender', event.target.value as StudentInput['gender'])} data-testid="select-gender">
-                        <option value="Female">Female</option><option value="Male">Male</option><option value="Other">Other</option>
-                      </select>
-                    </Field>
-                    <Field label="Home address" htmlFor="homeAddress">
-                      <input id="homeAddress" className="academy-input" value={form.homeAddress} onChange={(event) => update('homeAddress', event.target.value)} placeholder="Area, street, Larkana" data-testid="input-home-address" />
-                    </Field>
+                    <Controller
+                      name="contactNumber"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Field label="Contact number" htmlFor="contactNumber" error={fieldState.error?.message}>
+                          <NumericInput id="contactNumber" className={`academy-input ${fieldState.error ? 'invalid' : ''}`} value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} placeholder="03XX XXX XXXX" data-testid="input-contact-number" maxLength={15} />
+                        </Field>
+                      )}
+                    />
+                    <Controller
+                      name="dateOfBirth"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <DatePickerField id="dateOfBirth" label="Date of birth" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} maxDate={parseLocalDate(TODAY)} testId="input-date-of-birth" />
+                      )}
+                    />
+                    <Controller
+                      name="gender"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <FormSelect id="gender" label="Gender" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} options={GENDER_OPTIONS} testId="select-gender" />
+                      )}
+                    />
                   </div>
                 )}
                 {step === 2 && (
                   <div className="form-grid academy-fade-in">
-                    <Field label="Current class / grade" htmlFor="currentClass" error={errors.currentClass}>
-                      <input id="currentClass" className={`academy-input ${errors.currentClass ? 'invalid' : ''}`} value={form.currentClass} onChange={(event) => update('currentClass', event.target.value)} placeholder="e.g. Class 8" data-testid="input-current-class" />
+                    <Field label="Current class / grade" htmlFor="currentClass" error={errors.currentClass?.message}>
+                      <input id="currentClass" className={`academy-input ${errors.currentClass ? 'invalid' : ''}`} {...register('currentClass')} placeholder="e.g. Class 8" data-testid="input-current-class" />
                     </Field>
-                    <Field label="School / college" htmlFor="schoolCollege" error={errors.schoolCollege}>
-                      <input id="schoolCollege" className={`academy-input ${errors.schoolCollege ? 'invalid' : ''}`} value={form.schoolCollege} onChange={(event) => update('schoolCollege', event.target.value)} placeholder="Current institution" data-testid="input-school-college" />
+                    <Field label="School / college" htmlFor="schoolCollege" error={errors.schoolCollege?.message}>
+                      <input id="schoolCollege" className={`academy-input ${errors.schoolCollege ? 'invalid' : ''}`} {...register('schoolCollege')} placeholder="Current institution" data-testid="input-school-college" />
                     </Field>
-                    <Field label="Last academy attended" htmlFor="lastAcademy" error={errors.lastAcademy}>
-                      <input id="lastAcademy" className={`academy-input ${errors.lastAcademy ? 'invalid' : ''}`} value={form.lastAcademy} onChange={(event) => update('lastAcademy', event.target.value)} placeholder="Where did they learn before?" data-testid="input-last-academy" />
+                    <Field label="Last academy attended" htmlFor="lastAcademy" error={errors.lastAcademy?.message}>
+                      <input id="lastAcademy" className={`academy-input ${errors.lastAcademy ? 'invalid' : ''}`} {...register('lastAcademy')} placeholder="Where did they learn before?" data-testid="input-last-academy" />
                     </Field>
-                    <Field label="Course subject" htmlFor="courseSubject" error={errors.courseSubject}>
-                      <input id="courseSubject" className={`academy-input ${errors.courseSubject ? 'invalid' : ''}`} value={form.courseSubject} onChange={(event) => update('courseSubject', event.target.value)} placeholder="English Language" data-testid="input-course-subject" />
-                    </Field>
+                    <Controller
+                      name="courseSubject"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <FormSelect id="courseSubject" label="Course subject" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} options={COURSE_OPTIONS} testId="select-course-subject" />
+                      )}
+                    />
                     <div className="form-span">
-                      <Field label="Home address" htmlFor="homeAddress" error={errors.homeAddress}>
-                        <textarea id="homeAddress" rows={3} className={`academy-input ${errors.homeAddress ? 'invalid' : ''}`} value={form.homeAddress} onChange={(event) => update('homeAddress', event.target.value)} placeholder="House, street, area, Larkana" data-testid="textarea-home-address" />
+                      <Field label="Home address" htmlFor="homeAddress" error={errors.homeAddress?.message}>
+                        <textarea id="homeAddress" rows={3} className={`academy-input ${errors.homeAddress ? 'invalid' : ''}`} {...register('homeAddress')} placeholder="House, street, area, Larkana" data-testid="textarea-home-address" />
                       </Field>
                     </div>
                   </div>
@@ -357,30 +421,39 @@ function EnrollmentPage() {
                 {step === 3 && (
                   <div className="academy-fade-in">
                     <div className="form-grid">
-                      <Field label="Admission date" htmlFor="dateOfAdmission" error={errors.dateOfAdmission}>
-                        <input id="dateOfAdmission" type="date" className={`academy-input ${errors.dateOfAdmission ? 'invalid' : ''}`} value={form.dateOfAdmission} onChange={(event) => update('dateOfAdmission', event.target.value)} data-testid="input-date-of-admission" />
-                      </Field>
-                      <Field label="Preferred batch" htmlFor="batch" error={errors.batch}>
-                        <select id="batch" className={`academy-input ${errors.batch ? 'invalid' : ''}`} value={form.batch} onChange={(event) => update('batch', event.target.value as StudentInput['batch'])} data-testid="select-batch">
-                          {BATCHES.map((batch) => <option value={batch} key={batch}>{batch}</option>)}
-                        </select>
-                      </Field>
+                      <Controller
+                        name="dateOfAdmission"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                          <DatePickerField id="dateOfAdmission" label="Admission date" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} testId="input-date-of-admission" />
+                        )}
+                      />
+                      <Controller
+                        name="batch"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                          <FormSelect id="batch" label="Preferred batch" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} options={BATCHES.map((item) => ({ value: item, label: item }))} testId="select-batch" />
+                        )}
+                      />
                       <div className="form-span">
-                        <Field label="Preferred class time" htmlFor="time" error={errors.time}>
-                          <select id="time" className={`academy-input ${errors.time ? 'invalid' : ''}`} value={form.time} onChange={(event) => update('time', event.target.value as StudentInput['time'])} data-testid="select-time">
-                            {TIMES.map((time) => <option value={time} key={time}>{time}</option>)}
-                          </select>
-                        </Field>
+                        <Controller
+                          name="time"
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <FormSelect id="time" label="Preferred class time" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} options={availableTimes.map((item) => ({ value: item, label: item }))} testId="select-time" />
+                          )}
+                        />
                       </div>
                     </div>
+                    <p className="field-note">Available timings update with the selected batch.</p>
                     <div className="academy-eyebrow" style={{ margin: '1.5rem 0 .7rem' }}>Review before sending</div>
                     <div className="review-list">
-                      <div className="review-item"><span>Student</span><strong>{form.studentName}</strong></div>
-                      <div className="review-item"><span>Contact</span><strong>{form.contactNumber}</strong></div>
-                      <div className="review-item"><span>Learning at</span><strong>{form.schoolCollege}</strong></div>
-                      <div className="review-item"><span>Course</span><strong>{form.courseSubject}</strong></div>
-                      <div className="review-item"><span>Batch</span><strong>{form.batch}</strong></div>
-                      <div className="review-item"><span>Class time</span><strong>{form.time}</strong></div>
+                      <div className="review-item"><span>Student</span><strong>{watch('studentName')}</strong></div>
+                      <div className="review-item"><span>Contact</span><strong>{watch('contactNumber')}</strong></div>
+                      <div className="review-item"><span>Learning at</span><strong>{watch('schoolCollege')}</strong></div>
+                      <div className="review-item"><span>Course</span><strong>{watch('courseSubject')}</strong></div>
+                      <div className="review-item"><span>Batch</span><strong>{selectedBatch}</strong></div>
+                      <div className="review-item"><span>Class time</span><strong>{selectedTime}</strong></div>
                     </div>
                   </div>
                 )}
@@ -464,10 +537,14 @@ function StudentModal({ studentId, onClose, onChanged }: { studentId: string; on
   const deleteStudent = useDeleteStudent();
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<StudentInput | null>(null);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const record = detail;
 
   useEffect(() => {
-    if (detail) setEditForm({ ...detail });
+    if (detail) {
+      setEditForm({ ...detail });
+      setEditErrors({});
+    }
   }, [detail]);
 
   function updateField<K extends keyof StudentInput>(key: K, value: StudentInput[K]) {
@@ -477,7 +554,22 @@ function StudentModal({ studentId, onClose, onChanged }: { studentId: string; on
   function saveEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editForm) return;
-    updateStudent.mutate({ id: studentId, data: editForm }, {
+    const parsed = enrollmentSchema.safeParse(editForm);
+    if (!parsed.success) {
+      const nextErrors: Record<string, string> = {};
+      parsed.error.issues.forEach((issue) => {
+        const key = issue.path[0];
+        if (typeof key === 'string' && !nextErrors[key]) nextErrors[key] = issue.message;
+      });
+      setEditErrors(nextErrors);
+      return;
+    }
+    setEditErrors({});
+    updateStudent.mutate({ id: studentId, data: {
+      ...parsed.data,
+      studentName: sanitizeName(parsed.data.studentName),
+      contactNumber: sanitizePhone(parsed.data.contactNumber),
+    } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
@@ -530,15 +622,15 @@ function StudentModal({ studentId, onClose, onChanged }: { studentId: string; on
         {record && editing && editForm && (
           <form onSubmit={saveEdit}>
             <div className="modal-grid">
-              <Field label="Student name" htmlFor="edit-student-name"><input id="edit-student-name" className="academy-input" value={editForm.studentName} onChange={(event) => updateField('studentName', event.target.value)} data-testid="input-edit-student-name" /></Field>
-              <Field label="Contact number" htmlFor="edit-contact"><input id="edit-contact" className="academy-input" value={editForm.contactNumber} onChange={(event) => updateField('contactNumber', event.target.value)} data-testid="input-edit-contact" /></Field>
-              <Field label="Current class" htmlFor="edit-class"><input id="edit-class" className="academy-input" value={editForm.currentClass} onChange={(event) => updateField('currentClass', event.target.value)} data-testid="input-edit-class" /></Field>
-              <Field label="School / college" htmlFor="edit-school"><input id="edit-school" className="academy-input" value={editForm.schoolCollege} onChange={(event) => updateField('schoolCollege', event.target.value)} data-testid="input-edit-school" /></Field>
-              <Field label="Course subject" htmlFor="edit-course"><input id="edit-course" className="academy-input" value={editForm.courseSubject} onChange={(event) => updateField('courseSubject', event.target.value)} data-testid="input-edit-course" /></Field>
-              <Field label="Batch" htmlFor="edit-batch"><select id="edit-batch" className="academy-input" value={editForm.batch} onChange={(event) => updateField('batch', event.target.value as StudentInput['batch'])} data-testid="select-edit-batch">{BATCHES.map((batch) => <option value={batch} key={batch}>{batch}</option>)}</select></Field>
-              <Field label="Class time" htmlFor="edit-time"><select id="edit-time" className="academy-input" value={editForm.time} onChange={(event) => updateField('time', event.target.value as StudentInput['time'])} data-testid="select-edit-time">{TIMES.map((time) => <option value={time} key={time}>{time}</option>)}</select></Field>
-              <Field label="Admission date" htmlFor="edit-admission-date"><input id="edit-admission-date" type="date" className="academy-input" value={editForm.dateOfAdmission} onChange={(event) => updateField('dateOfAdmission', event.target.value)} data-testid="input-edit-admission-date" /></Field>
-              <div className="form-span"><Field label="Home address" htmlFor="edit-address"><textarea id="edit-address" rows={2} className="academy-input" value={editForm.homeAddress} onChange={(event) => updateField('homeAddress', event.target.value)} data-testid="textarea-edit-address" /></Field></div>
+               <Field label="Student name" htmlFor="edit-student-name" error={editErrors.studentName}><NameInput id="edit-student-name" className={`academy-input ${editErrors.studentName ? 'invalid' : ''}`} value={editForm.studentName} onValueChange={(value) => updateField('studentName', value)} data-testid="input-edit-student-name" /></Field>
+               <Field label="Contact number" htmlFor="edit-contact" error={editErrors.contactNumber}><NumericInput id="edit-contact" className={`academy-input ${editErrors.contactNumber ? 'invalid' : ''}`} value={editForm.contactNumber} onValueChange={(value) => updateField('contactNumber', value)} data-testid="input-edit-contact" maxLength={15} /></Field>
+               <Field label="Current class" htmlFor="edit-class" error={editErrors.currentClass}><input id="edit-class" className={`academy-input ${editErrors.currentClass ? 'invalid' : ''}`} value={editForm.currentClass} onChange={(event) => updateField('currentClass', event.target.value)} data-testid="input-edit-class" /></Field>
+               <Field label="School / college" htmlFor="edit-school" error={editErrors.schoolCollege}><input id="edit-school" className={`academy-input ${editErrors.schoolCollege ? 'invalid' : ''}`} value={editForm.schoolCollege} onChange={(event) => updateField('schoolCollege', event.target.value)} data-testid="input-edit-school" /></Field>
+               <FormSelect id="edit-course" label="Course subject" value={editForm.courseSubject} onValueChange={(value) => updateField('courseSubject', value)} error={editErrors.courseSubject} options={COURSE_OPTIONS} testId="select-edit-course" />
+               <FormSelect id="edit-batch" label="Batch" value={editForm.batch} onValueChange={(value) => { const nextBatch = value as StudentInput['batch']; updateField('batch', nextBatch); if (!BATCH_TIMES[nextBatch].includes(editForm.time)) updateField('time', BATCH_TIMES[nextBatch][0]); }} error={editErrors.batch} options={BATCHES.map((item) => ({ value: item, label: item }))} testId="select-edit-batch" />
+               <FormSelect id="edit-time" label="Class time" value={editForm.time} onValueChange={(value) => updateField('time', value as StudentInput['time'])} error={editErrors.time} options={BATCH_TIMES[editForm.batch].map((item) => ({ value: item, label: item }))} testId="select-edit-time" />
+               <DatePickerField id="edit-admission-date" label="Admission date" value={editForm.dateOfAdmission} onValueChange={(value) => updateField('dateOfAdmission', value)} error={editErrors.dateOfAdmission} testId="input-edit-admission-date" />
+               <div className="form-span"><Field label="Home address" htmlFor="edit-address" error={editErrors.homeAddress}><textarea id="edit-address" rows={2} className={`academy-input ${editErrors.homeAddress ? 'invalid' : ''}`} value={editForm.homeAddress} onChange={(event) => updateField('homeAddress', event.target.value)} data-testid="textarea-edit-address" /></Field></div>
             </div>
             <div className="form-actions"><button type="button" className="academy-btn academy-btn-outline academy-btn-small" onClick={() => setEditing(false)} data-testid="button-cancel-edit">Cancel</button><button type="submit" className="academy-btn academy-btn-primary academy-btn-small" disabled={updateStudent.isPending} data-testid="button-save-student">{updateStudent.isPending ? 'Saving…' : 'Save changes'} <Check size={14} /></button></div>
           </form>

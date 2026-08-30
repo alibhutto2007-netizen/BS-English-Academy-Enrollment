@@ -1,0 +1,265 @@
+I want you to upgrade the existing Academy Admission Form using high-quality PREBUILT components and libraries. Do NOT build complex components such as the Calendar or Dropdown from scratch.
+
+First inspect the existing project, framework, dependencies, form components, and current UI before making changes. Preserve all existing Supabase integration, database structure, admission workflow, and functionality.
+
+==================================================
+1. USE MODERN PREBUILT COMPONENTS
+==================================================
+
+For this React/Vite project, use the best compatible prebuilt component stack:
+
+- shadcn/ui for UI components
+- React Hook Form for form state management
+- Zod for validation
+- @hookform/resolvers for Zod integration
+
+Use existing dependencies if they are already installed. Only install missing dependencies if required.
+
+Use reusable components and utilities instead of duplicating validation logic across fields.
+
+==================================================
+2. STUDENT NAME VALIDATION + AUTO TITLE CASE
+==================================================
+
+For Student Name, Father Name, Guardian Name, and other name fields:
+
+STRICT RULES:
+
+- Numbers must NOT be allowed.
+- Numeric characters typed by keyboard must be immediately removed/prevented.
+- Numeric characters pasted into the field must also be removed.
+- Only letters and single spaces should remain.
+- Remove special characters unless specifically needed.
+- Remove unnecessary spaces.
+- Do not allow multiple consecutive spaces.
+- Automatically convert names to Title Case.
+
+Examples:
+
+muhammad ali
+→ Muhammad Ali
+
+MUHAMMAD ALI
+→ Muhammad Ali
+
+mUhAmMaD aLi
+→ Muhammad Ali
+
+muhammad    ali
+→ Muhammad Ali
+
+Muhammad123
+→ Muhammad
+
+123Ali
+→ Ali
+
+Create a reusable sanitizeName() utility.
+
+The behavior must work during typing AND pasting.
+
+==================================================
+3. NUMERIC INPUT VALIDATION
+==================================================
+
+For Phone Number, CNIC, B-Form, Roll Number, Age, and other numeric fields:
+
+- Alphabets must NOT remain in the field.
+- Letters typed must be prevented or immediately removed.
+- Letters pasted must also be removed.
+- Keep only valid numeric characters.
+- Apply maximum length limits where appropriate.
+- Preserve leading zeros.
+
+IMPORTANT:
+
+Do NOT use input type="number" for Phone Numbers, CNIC, or B-Form because leading zeros and formatting can cause problems.
+
+Use type="text" with:
+- inputMode="numeric"
+- reusable numeric sanitization
+- maximum length validation
+
+Create a reusable sanitizeNumbers() utility.
+
+Examples:
+
+abc123
+→ 123
+
+0300abc1234567
+→ 03001234567
+
+==================================================
+4. PROFESSIONAL PREBUILT DATE PICKER
+==================================================
+
+Replace the current/basic Date fields with a professional prebuilt Date Picker using the project's shadcn/ui Calendar component.
+
+Requirements:
+
+- Calendar popup
+- Date selection
+- Month navigation
+- Year navigation
+- Easy year selection for old dates
+- Mobile responsive
+- Keyboard accessible
+- Proper form validation
+- Clean modern design
+- Consistent with the existing Academy UI
+- Prevent invalid dates
+
+Use the prebuilt Calendar component rather than creating a calendar manually.
+
+For Date of Birth:
+- Prevent future dates.
+- Allow easy navigation to previous years.
+
+For Admission Date:
+- Default to today's date.
+- Allow Admin to change/update the date from the calendar.
+
+Make date handling safe and consistent with the user's local timezone.
+
+==================================================
+5. MODERN PREBUILT DROPDOWN / SELECT
+==================================================
+
+Replace basic HTML <select> elements where appropriate with modern prebuilt shadcn/ui Select components.
+
+For large lists, searchable options, or many students/courses, use a searchable Combobox pattern.
+
+Dropdown requirements:
+
+- Modern professional UI
+- Smooth opening/closing
+- Keyboard accessible
+- Mobile responsive
+- Placeholder support
+- Clear validation errors
+- Correct selected state
+- Search functionality where useful
+
+Use this for fields such as:
+
+- Course
+- Class
+- Batch
+- Batch Timing
+- Gender
+- Academic Level
+- Payment Status
+
+==================================================
+6. FORM VALIDATION SYSTEM
+==================================================
+
+Use React Hook Form + Zod.
+
+Validation should happen:
+
+- While typing where appropriate
+- On blur
+- On form submission
+
+Show:
+
+- Clear error messages
+- Invalid field states
+- Accessible validation attributes
+- Required field indicators
+
+Do not erase valid user-entered information when another field has an error.
+
+==================================================
+7. REUSABLE ARCHITECTURE
+==================================================
+
+Create reusable utilities/components such as:
+
+utils/inputSanitizers.ts
+
+Functions:
+
+- sanitizeName()
+- sanitizeNumbers()
+- formatTitleCase()
+- sanitizePhone()
+- sanitizeCNIC()
+
+Create reusable form components where useful:
+
+- NameInput
+- NumericInput
+- PhoneInput
+- DatePicker
+- FormSelect
+
+Do not duplicate the same onChange logic throughout multiple files.
+
+==================================================
+8. SUPABASE SAFETY
+==================================================
+
+Do NOT modify or break:
+
+- Supabase connection
+- Environment variables
+- Existing database tables
+- Admission records
+- Existing insert/update functionality
+
+The validation and formatting system should work correctly before data is sent to Supabase.
+
+==================================================
+9. TEST EVERYTHING
+==================================================
+
+Test these cases:
+
+NAME:
+
+muhammad ali
+Expected: Muhammad Ali
+
+MUHAMMAD ALI
+Expected: Muhammad Ali
+
+mUhAmMaD    aLi
+Expected: Muhammad Ali
+
+Muhammad123
+Expected: Muhammad
+
+123Ali
+Expected: Ali
+
+
+PHONE:
+
+abc123
+Expected: 123
+
+0300abc1234567
+Expected: 03001234567
+
+
+DATE:
+
+- Date of Birth cannot be in the future.
+- Admission Date can be updated by the Admin.
+- Calendar must allow easy month/year navigation.
+
+
+IMPORTANT FINAL INSTRUCTION:
+
+Before implementing anything, inspect the current project and determine which libraries are already installed.
+
+Prefer using existing project dependencies.
+
+If shadcn/ui is already available, use its existing components.
+
+Do not redesign the entire application unnecessarily.
+
+Upgrade only the form validation, input behavior, Calendar/Date Picker, and Dropdown components while preserving the current Academy UI and Supabase functionality.
