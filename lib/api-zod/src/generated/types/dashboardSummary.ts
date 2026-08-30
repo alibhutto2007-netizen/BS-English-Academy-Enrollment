@@ -12,4 +12,5 @@ export interface DashboardSummary {
   todayAdmissions: number;
   batchCounts: BatchCount[];
   timeCounts: BatchCount[];
+  courseCounts: BatchCount[];
 }

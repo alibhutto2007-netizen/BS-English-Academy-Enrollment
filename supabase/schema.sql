@@ -10,12 +10,21 @@ create table if not exists public.students (
   gender text not null check (gender in ('Female', 'Male', 'Other')),
   home_address text not null,
   course_subject text not null,
-  batch text not null check (batch in ('Basic', 'Advance', 'Medium')),
+  batch text not null check (batch in ('Basic', 'Advance', 'Medium', 'Free Batch')),
   time text not null check (time in ('2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM')),
   created_at timestamptz not null default now()
 );
 
+alter table public.students drop constraint if exists students_batch_check;
+alter table public.students add constraint students_batch_check
+  check (batch in ('Basic', 'Advance', 'Medium', 'Free Batch'));
+
 alter table public.students enable row level security;
+
+drop policy if exists "Public can submit enrollments" on public.students;
+drop policy if exists "API can read enrollments" on public.students;
+drop policy if exists "API can update enrollments" on public.students;
+drop policy if exists "API can delete enrollments" on public.students;
 
 create policy "Public can submit enrollments"
   on public.students for insert

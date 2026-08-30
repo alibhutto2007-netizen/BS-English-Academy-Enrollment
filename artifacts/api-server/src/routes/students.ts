@@ -20,6 +20,17 @@ const router: IRouter = Router();
 const studentColumns =
   "id,student_name,current_class,last_academy,school_college,contact_number,date_of_birth,date_of_admission,gender,home_address,course_subject,batch,time,created_at";
 
+const batchTimes: Record<string, string> = {
+  Basic: "2:00 PM - 3:00 PM",
+  Advance: "3:00 PM - 4:00 PM",
+  Medium: "4:00 PM - 5:00 PM",
+  "Free Batch": "5:00 PM - 6:00 PM",
+};
+
+function hasValidBatchTime(batch: string, time: string) {
+  return batchTimes[batch] === time;
+}
+
 function toStudent(row: Record<string, unknown>) {
   return {
     id: row.id,
@@ -97,6 +108,10 @@ router.post("/students", async (req, res) => {
     res.status(400).json({ error: "Please complete all required fields." });
     return;
   }
+  if (!hasValidBatchTime(parsed.data.batch, parsed.data.time)) {
+    res.status(400).json({ error: "That batch and class time combination is not available." });
+    return;
+  }
   const { data, error } = await supabase
     .from("students")
     .insert(toRow(parsed.data))
@@ -139,6 +154,10 @@ router.patch("/students/:id", requireAdmin, async (req, res) => {
   const body = UpdateStudentBody.safeParse(req.body);
   if (!params.success || !body.success) {
     res.status(400).json({ error: "Invalid student details." });
+    return;
+  }
+  if (!hasValidBatchTime(body.data.batch, body.data.time)) {
+    res.status(400).json({ error: "That batch and class time combination is not available." });
     return;
   }
   const { data, error } = await supabase

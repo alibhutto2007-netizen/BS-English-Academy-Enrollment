@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { motion } from 'framer-motion';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,6 +20,7 @@ import {
   Lightbulb,
   ListFilter,
   LogOut,
+  MapPin,
   Moon,
   Pencil,
   Plus,
@@ -29,17 +32,15 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { SiInstagram, SiTiktok } from 'react-icons/si';
+import { SiInstagram, SiTiktok, SiWhatsapp } from 'react-icons/si';
 import {
   getGetDashboardSummaryQueryKey,
   getGetStudentQueryKey,
-  getHealthCheckQueryKey,
   getListStudentsQueryKey,
   useCreateStudent,
   useDeleteStudent,
   useGetDashboardSummary,
   useGetStudent,
-  useHealthCheck,
   useListStudents,
   useUpdateStudent,
   type Student,
@@ -48,7 +49,6 @@ import {
 import {
   ClerkProvider,
   SignIn,
-  SignUp,
   useAuth,
   useClerk,
 } from '@clerk/react';
@@ -71,13 +71,23 @@ const clerkPubKey = publishableKeyFromHost(
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-const BATCHES = ['Basic', 'Advance', 'Medium'] as const;
+const BATCHES = ['Basic', 'Advance', 'Medium', 'Free Batch'] as const;
 const TIMES = ['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'] as const;
-const BATCH_TIMES: Record<(typeof BATCHES)[number], readonly (typeof TIMES)[number][]> = {
-  Basic: ['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM'],
-  Medium: ['3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM'],
-  Advance: ['4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'],
+const BATCH_LABELS: Record<(typeof BATCHES)[number], string> = {
+  Basic: 'Basic',
+  Advance: 'Advance',
+  Medium: 'Medium',
+  'Free Batch': 'Free Batch (Registration Fee Only)',
 };
+const BATCH_TIMES: Record<(typeof BATCHES)[number], readonly (typeof TIMES)[number][]> = {
+  Basic: ['2:00 PM - 3:00 PM'],
+  Advance: ['3:00 PM - 4:00 PM'],
+  Medium: ['4:00 PM - 5:00 PM'],
+  'Free Batch': ['5:00 PM - 6:00 PM'],
+};
+const BATCH_OPTIONS = BATCHES.map((value) => ({ value, label: BATCH_LABELS[value] }));
+const WHATSAPP_URL = 'https://wa.me/923098575110';
+const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=Gareeb+Muqam%2C+near+Big+Fish+Market%2C+Larkana';
 const COURSE_OPTIONS = [
   { value: 'English Language', label: 'English Language' },
   { value: 'Spoken English', label: 'Spoken English' },
@@ -118,8 +128,12 @@ const enrollmentSchema = z.object({
   gender: z.enum(['Female', 'Male', 'Other']),
   homeAddress: z.string().trim().min(1, 'Please add the home address.').max(500, 'Address is too long.'),
   courseSubject: z.string().trim().min(1, 'Please choose a course subject.').max(120, 'Course subject is too long.'),
-  batch: z.enum(['Basic', 'Advance', 'Medium']),
+  batch: z.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
   time: z.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM']),
+}).superRefine((value, context) => {
+  if (!BATCH_TIMES[value.batch].includes(value.time)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['time'], message: 'Please choose the timing assigned to this batch.' });
+  }
 });
 
 const clerkAppearance = {
@@ -251,7 +265,38 @@ function PublicFooter() {
           </SocialLink>
         </div>
       </div>
+      <div className="rail-contact" aria-label="Academy contact information">
+        <SocialLink href={WHATSAPP_URL} label="Contact BS English Virtual Academy on WhatsApp">
+          <SiWhatsapp size={15} aria-hidden="true" />
+          <span>+92 3098575110</span>
+        </SocialLink>
+        <SocialLink href={MAP_URL} label="Open BS English Virtual Academy address in Google Maps">
+          <MapPin size={15} aria-hidden="true" />
+          <span>Gareeb Muqam, near Big Fish Market, Larkana</span>
+        </SocialLink>
+      </div>
     </div>
+  );
+}
+
+function AcademyContactFooter() {
+  return (
+    <footer className="academy-contact-footer">
+      <div>
+        <span className="footer-kicker">BS English Virtual Academy · Larkana</span>
+        <strong>Need help with enrollment?</strong>
+      </div>
+      <div className="footer-contact-links">
+        <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="contact-footer-link">
+          <SiWhatsapp size={16} aria-hidden="true" />
+          <span>WhatsApp: +92 3098575110</span>
+        </a>
+        <a href={MAP_URL} target="_blank" rel="noreferrer" className="contact-footer-link">
+          <MapPin size={16} aria-hidden="true" />
+          <span>Gareeb Muqam, near Big Fish Market, Larkana</span>
+        </a>
+      </div>
+    </footer>
   );
 }
 
@@ -366,10 +411,9 @@ function EnrollmentPage() {
           </div>
           <PublicFooter />
         </div>
-      </aside>
+       </aside>
       <main className="enroll-main">
         <div className="top-line">
-          <Link href="/admin" data-testid="link-admin-signin">Admin sign in <ChevronRight size={14} /></Link>
           <ThemeToggle />
         </div>
         <div className="enroll-content">
@@ -472,7 +516,7 @@ function EnrollmentPage() {
                         name="batch"
                         control={control}
                         render={({ field, fieldState }) => (
-                          <FormSelect id="batch" label="Preferred batch" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} options={BATCHES.map((item) => ({ value: item, label: item }))} testId="select-batch" />
+                        <FormSelect id="batch" label="Preferred batch" value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} error={fieldState.error?.message} options={BATCH_OPTIONS} testId="select-batch" />
                         )}
                       />
                       <div className="form-span">
@@ -485,7 +529,7 @@ function EnrollmentPage() {
                         />
                       </div>
                     </div>
-                    <p className="field-note">Available timings update with the selected batch.</p>
+                    <p className="field-note">{selectedBatch === 'Free Batch' ? 'Free Batch is available with registration fee only.' : 'Each batch is paired with a dedicated class time so the desk can plan consistently.'}</p>
                     <div className="academy-eyebrow" style={{ margin: '1.5rem 0 .7rem' }}>Review before sending</div>
                     <div className="review-list">
                       <div className="review-item"><span>Student</span><strong>{watch('studentName')}</strong></div>
@@ -515,7 +559,6 @@ function EnrollmentPage() {
               <p>The academy team has received the enrollment. Keep this confirmation for your records; we’ll contact you shortly to confirm the first class.</p>
               <div className="success-actions">
                 <button type="button" className="academy-btn academy-btn-primary" onClick={downloadConfirmation} data-testid="button-download-confirmation"><Download size={15} /> Download confirmation</button>
-                <Link href="/admin" className="academy-btn academy-btn-outline" data-testid="link-open-admin">Open admissions desk <ChevronRight size={15} /></Link>
               </div>
             </div>
           )}
@@ -542,18 +585,59 @@ function AdminSidebar() {
   );
 }
 
-function BarList({ title, data }: { title: string; data: { label: string; count: number }[] }) {
-  const max = Math.max(...data.map((item) => item.count), 1);
+type CountItem = { label: string; count: number };
+
+function summarizeStudents(records: Student[]) {
+  const batchCounts = new Map(BATCHES.map((label) => [label, 0]));
+  const timeCounts = new Map(TIMES.map((label) => [label, 0]));
+  const courseCounts = new Map<string, number>();
+  let todayAdmissions = 0;
+
+  for (const student of records) {
+    batchCounts.set(student.batch, (batchCounts.get(student.batch) ?? 0) + 1);
+    timeCounts.set(student.time, (timeCounts.get(student.time) ?? 0) + 1);
+    courseCounts.set(student.courseSubject, (courseCounts.get(student.courseSubject) ?? 0) + 1);
+    if (student.dateOfAdmission?.slice(0, 10) === TODAY) {
+      todayAdmissions += 1;
+    }
+  }
+
+  return {
+    totalStudents: records.length,
+    todayAdmissions,
+    batchCounts: Array.from(batchCounts, ([label, count]) => ({ label, count })),
+    timeCounts: Array.from(timeCounts, ([label, count]) => ({ label, count })),
+    courseCounts: Array.from(courseCounts, ([label, count]) => ({ label, count })),
+  };
+}
+
+function chartLabel(label: string) {
+  return label
+    .replace(':00 PM', '')
+    .replace(' - ', '–')
+    .replace(':00 PM', '')
+    .replace('Free Batch', 'Free');
+}
+
+function AnalyticsChart({ title, data }: { title: string; data: CountItem[] }) {
   return (
     <section className="academy-surface chart-card" data-testid={`chart-${title.toLowerCase().replaceAll(' ', '-')}`}>
       <h3>{title}</h3>
-      {data.length ? data.map((item) => (
-        <div className="bar-row" key={item.label}>
-          <span>{item.label.replace(' PM', '')}</span>
-          <div className="bar-track"><div className="bar-fill" style={{ width: `${Math.max(5, (item.count / max) * 100)}%` }} /></div>
-          <time>{item.count}</time>
-        </div>
-      )) : <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: '.75rem' }}>No enrollments yet.</p>}
+      <div className="visual-chart">
+        <ResponsiveContainer width="100%" height={190}>
+          <BarChart data={data.map((item) => ({ ...item, shortLabel: chartLabel(item.label) }))} margin={{ top: 8, right: 4, left: -22, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+            <XAxis dataKey="shortLabel" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+            <Tooltip cursor={{ fill: 'hsl(var(--primary) / .08)' }} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 10, color: 'hsl(var(--foreground))', fontSize: 12 }} formatter={(value) => [value, 'Enrollments']} />
+            <Bar dataKey="count" fill="hsl(var(--primary))" radius={[5, 5, 0, 0]} maxBarSize={34} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="chart-legend">
+        {data.filter((item) => item.count > 0).map((item) => <span key={item.label}><i />{item.label}: <strong>{item.count}</strong></span>)}
+        {!data.some((item) => item.count > 0) && <span>No enrollments yet.</span>}
+      </div>
     </section>
   );
 }
@@ -563,7 +647,7 @@ function StudentRow({ student, onOpen }: { student: Student; onOpen: (id: string
     <tr data-testid={`row-student-${student.id}`}>
       <td><div className="student-name"><span className="initials">{initials(student.studentName)}</span><span>{student.studentName}<span className="cell-sub">{student.currentClass || 'Class not added'}</span></span></div></td>
       <td>{student.courseSubject}<span className="cell-sub">{student.schoolCollege}</span></td>
-      <td><span className="batch-tag">{student.batch}</span><span className="cell-sub">{student.time}</span></td>
+      <td><span className="batch-tag">{student.batch}</span><span className="cell-sub">{student.time}{student.batch === 'Free Batch' ? ' · Registration fee only' : ''}</span></td>
       <td>{displayDate(student.dateOfAdmission)}<span className="cell-sub">{student.contactNumber}</span></td>
       <td><div className="table-actions"><button type="button" className="icon-btn" onClick={() => onOpen(student.id)} data-testid={`button-view-student-${student.id}`} aria-label={`View ${student.studentName}`}><ChevronRight size={16} /></button></div></td>
     </tr>
@@ -632,8 +716,8 @@ function StudentModal({ studentId, onClose, onChanged }: { studentId: string; on
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="academy-surface modal-card academy-scrollbar" role="dialog" aria-modal="true" aria-label="Student enrollment detail" data-testid="modal-student-detail">
+    <motion.div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: .2 }}>
+      <motion.section className="academy-surface modal-card academy-scrollbar" role="dialog" aria-modal="true" aria-label="Student enrollment detail" data-testid="modal-student-detail" initial={{ opacity: 0, y: 18, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: .25, ease: 'easeOut' }}>
         <div className="modal-head">
           <div><div className="academy-eyebrow">Enrollment record</div><h2>{record?.studentName || (isLoading ? 'Loading record' : 'Student record')}</h2><p>{record ? `Reference ${record.id} · received ${displayDate(record.createdAt)}` : 'Please wait while we load the details.'}</p></div>
           <button type="button" className="icon-btn" onClick={onClose} data-testid="button-close-student-modal" aria-label="Close detail"><X size={18} /></button>
@@ -667,7 +751,7 @@ function StudentModal({ studentId, onClose, onChanged }: { studentId: string; on
                <Field label="Current class" htmlFor="edit-class" error={editErrors.currentClass}><input id="edit-class" className={`academy-input ${editErrors.currentClass ? 'invalid' : ''}`} value={editForm.currentClass} onChange={(event) => updateField('currentClass', event.target.value)} data-testid="input-edit-class" /></Field>
                <Field label="School / college" htmlFor="edit-school" error={editErrors.schoolCollege}><input id="edit-school" className={`academy-input ${editErrors.schoolCollege ? 'invalid' : ''}`} value={editForm.schoolCollege} onChange={(event) => updateField('schoolCollege', event.target.value)} data-testid="input-edit-school" /></Field>
                <FormSelect id="edit-course" label="Course subject" value={editForm.courseSubject} onValueChange={(value) => updateField('courseSubject', value)} error={editErrors.courseSubject} options={COURSE_OPTIONS} testId="select-edit-course" />
-               <FormSelect id="edit-batch" label="Batch" value={editForm.batch} onValueChange={(value) => { const nextBatch = value as StudentInput['batch']; updateField('batch', nextBatch); if (!BATCH_TIMES[nextBatch].includes(editForm.time)) updateField('time', BATCH_TIMES[nextBatch][0]); }} error={editErrors.batch} options={BATCHES.map((item) => ({ value: item, label: item }))} testId="select-edit-batch" />
+               <FormSelect id="edit-batch" label="Batch" value={editForm.batch} onValueChange={(value) => { const nextBatch = value as StudentInput['batch']; updateField('batch', nextBatch); if (!BATCH_TIMES[nextBatch].includes(editForm.time)) updateField('time', BATCH_TIMES[nextBatch][0]); }} error={editErrors.batch} options={BATCH_OPTIONS} testId="select-edit-batch" />
                <FormSelect id="edit-time" label="Class time" value={editForm.time} onValueChange={(value) => updateField('time', value as StudentInput['time'])} error={editErrors.time} options={BATCH_TIMES[editForm.batch].map((item) => ({ value: item, label: item }))} testId="select-edit-time" />
                <DatePickerField id="edit-admission-date" label="Admission date" value={editForm.dateOfAdmission} onValueChange={(value) => updateField('dateOfAdmission', value)} error={editErrors.dateOfAdmission} testId="input-edit-admission-date" />
                <div className="form-span"><Field label="Home address" htmlFor="edit-address" error={editErrors.homeAddress}><textarea id="edit-address" rows={2} className={`academy-input ${editErrors.homeAddress ? 'invalid' : ''}`} value={editForm.homeAddress} onChange={(event) => updateField('homeAddress', event.target.value)} data-testid="textarea-edit-address" /></Field></div>
@@ -675,8 +759,8 @@ function StudentModal({ studentId, onClose, onChanged }: { studentId: string; on
             <div className="form-actions"><button type="button" className="academy-btn academy-btn-outline academy-btn-small" onClick={() => setEditing(false)} data-testid="button-cancel-edit">Cancel</button><button type="submit" className="academy-btn academy-btn-primary academy-btn-small" disabled={updateStudent.isPending} data-testid="button-save-student">{updateStudent.isPending ? 'Saving…' : 'Save changes'} <Check size={14} /></button></div>
           </form>
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 
@@ -688,12 +772,15 @@ function AdminDashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const params = useMemo(() => ({ search: search || undefined, batch: batch === 'all' ? undefined : batch, time: time === 'all' ? undefined : time, limit: 500 }), [search, batch, time]);
   const { data: students = [], isLoading, isError, refetch } = useListStudents(params, { query: { queryKey: getListStudentsQueryKey(params) } });
+  const { data: allStudents, isError: allStudentsError } = useListStudents({ limit: 500 }, { query: { queryKey: getListStudentsQueryKey({ limit: 500 }) } });
   const { data: summary } = useGetDashboardSummary();
-  const { data: health, isError: healthError } = useHealthCheck({ query: { queryKey: getHealthCheckQueryKey() } });
+  const analytics = useMemo(() => {
+    if (allStudents && !allStudentsError) return summarizeStudents(allStudents);
+    return summary ?? summarizeStudents([]);
+  }, [allStudents, allStudentsError, summary]);
   const visibleStudents = useMemo(() => students.filter((student) => {
-    if (quick === 'today') return student.dateOfAdmission?.slice(0, 10) === TODAY || student.createdAt?.slice(0, 10) === TODAY;
-    if (quick === 'basic') return student.batch === 'Basic';
-    if (quick === 'advance') return student.batch === 'Advance';
+    if (quick === 'today') return student.dateOfAdmission?.slice(0, 10) === TODAY;
+    if (quick !== 'all' && quick !== 'today') return student.batch === quick;
     return true;
   }), [students, quick]);
 
@@ -713,38 +800,40 @@ function AdminDashboard() {
     <div className="academy-app admin-shell">
       <AdminSidebar />
       <main className="admin-main">
-        <header className="admin-header">
+        <motion.header className="admin-header" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .35 }}>
           <div><div className="academy-eyebrow">Student operations · Larkana</div><h1>Good morning, admissions team.</h1><p>Every new learner deserves a thoughtful first welcome.</p></div>
-          <div className="header-actions"><span className="health-dot" data-testid="status-api-health"><i />{healthError ? 'Offline mode' : health?.status || 'Checking desk'}</span><ThemeToggle /><button type="button" className="academy-btn academy-btn-primary academy-btn-small" onClick={exportStudents} data-testid="button-export-students"><Download size={14} /> Export</button></div>
-        </header>
+          <div className="header-actions"><ThemeToggle /><button type="button" className="academy-btn academy-btn-primary academy-btn-small" onClick={exportStudents} data-testid="button-export-students"><Download size={14} /> Export</button></div>
+        </motion.header>
         <section className="summary-grid" aria-label="Enrollment summary">
-          {[{ label: 'Total students', value: summary?.totalStudents ?? 0, foot: 'All active records', icon: Users, primary: true }, { label: 'Today’s admissions', value: summary?.todayAdmissions ?? 0, foot: 'Freshly received', icon: UserCheck }, { label: 'Classes on the desk', value: summary?.timeCounts?.reduce((total, item) => total + (item.count ? 1 : 0), 0) ?? 0, foot: 'Time windows in use', icon: Clock3 }, { label: 'Courses chosen', value: summary?.batchCounts?.length ?? 0, foot: 'Learning pathways', icon: BookOpen }].map((stat) => (
-            <div className={`academy-surface summary-card ${stat.primary ? 'primary' : ''}`} key={stat.label} data-testid={`stat-${stat.label.toLowerCase().replaceAll(' ', '-')}`}>
+          {[{ label: 'Total students', value: analytics.totalStudents, foot: 'All active records', icon: Users, primary: true }, { label: 'Today’s admissions', value: analytics.todayAdmissions, foot: 'Freshly received', icon: UserCheck }, { label: 'Classes on the desk', value: analytics.timeCounts.filter((item) => item.count > 0).length, foot: 'Time windows in use', icon: Clock3 }, { label: 'Courses chosen', value: analytics.courseCounts.length, foot: 'Learning pathways', icon: BookOpen }].map((stat, index) => (
+            <motion.div className={`academy-surface summary-card ${stat.primary ? 'primary' : ''}`} key={stat.label} data-testid={`stat-${stat.label.toLowerCase().replaceAll(' ', '-')}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .35, delay: index * .06 }}>
               <div className="stat-caption">{stat.label}</div><div className="stat-number">{stat.value}</div><div className="stat-foot">{stat.foot}</div><stat.icon size={18} style={{ position: 'absolute', top: '1rem', right: '1rem', opacity: .55 }} />
-            </div>
+            </motion.div>
           ))}
         </section>
         <div className="dashboard-columns">
-          <section className="academy-surface student-panel">
+          <motion.section className="academy-surface student-panel" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .4, delay: .18 }}>
             <div className="panel-head"><div><h2>Enrollment records</h2><p>{visibleStudents.length} record{visibleStudents.length === 1 ? '' : 's'} shown</p></div><div className="academy-eyebrow">Live desk</div></div>
             <div className="filter-wrap">
               <div className="filter-search"><Search size={15} /><input type="search" className="academy-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by student name…" data-testid="input-search-students" /></div>
-              <select className="academy-input" value={batch} onChange={(event) => { setBatch(event.target.value); setQuick('all'); }} data-testid="select-filter-batch"><option value="all">All batches</option>{BATCHES.map((item) => <option value={item} key={item}>{item}</option>)}</select>
+              <select className="academy-input" value={batch} onChange={(event) => { setBatch(event.target.value); setQuick('all'); }} data-testid="select-filter-batch"><option value="all">All batches</option>{BATCH_OPTIONS.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select>
               <select className="academy-input" value={time} onChange={(event) => { setTime(event.target.value); setQuick('all'); }} data-testid="select-filter-time"><option value="all">All times</option>{TIMES.map((item) => <option value={item} key={item}>{item}</option>)}</select>
             </div>
-            <div style={{ padding: '.8rem 1.15rem 0' }}><div className="quick-views"><button type="button" className={quick === 'all' ? 'active' : ''} onClick={() => setQuick('all')} data-testid="button-quick-all"><ListFilter size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />All records</button><button type="button" className={quick === 'today' ? 'active' : ''} onClick={() => setQuick('today')} data-testid="button-quick-today"><CalendarDays size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />Today</button><button type="button" className={quick === 'basic' ? 'active' : ''} onClick={() => setQuick('basic')} data-testid="button-quick-basic">Basic batch</button><button type="button" className={quick === 'advance' ? 'active' : ''} onClick={() => setQuick('advance')} data-testid="button-quick-advance">Advance batch</button></div></div>
+            <div style={{ padding: '.8rem 1.15rem 0' }}><div className="quick-views"><button type="button" className={quick === 'all' ? 'active' : ''} onClick={() => setQuick('all')} data-testid="button-quick-all"><ListFilter size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />All records</button><button type="button" className={quick === 'today' ? 'active' : ''} onClick={() => setQuick('today')} data-testid="button-quick-today"><CalendarDays size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />Today</button>{BATCHES.map((item) => <button type="button" className={quick === item ? 'active' : ''} onClick={() => setQuick(item)} data-testid={`button-quick-${item.toLowerCase().replaceAll(' ', '-')}`} key={item}>{item === 'Free Batch' ? 'Free batch' : `${item} batch`}</button>)}</div></div>
             <div className="student-table-wrap academy-scrollbar">
               {isLoading ? <div style={{ padding: '1rem' }} data-testid="skeleton-student-list">{[1, 2, 3, 4].map((item) => <div key={item} className="academy-skeleton" style={{ height: 48, borderRadius: '.45rem', marginBottom: '.45rem' }} />)}</div> : isError ? <div className="error-state" data-testid="error-student-list"><CircleAlert size={28} /><strong>Couldn’t load the enrollment desk</strong><span>Check the connection and try again.</span><br /><button type="button" className="academy-btn academy-btn-outline academy-btn-small" onClick={() => refetch()} data-testid="button-retry-students">Try again</button></div> : visibleStudents.length === 0 ? <div className="empty-state" data-testid="empty-student-list"><ClipboardList size={30} /><strong>No enrollment records match</strong><span>Try a different filter or add the first learner.</span></div> : (
                 <table className="student-table"><thead><tr><th>Student</th><th>Course</th><th>Batch</th><th>Admission</th><th aria-label="Actions" /></tr></thead><tbody>{visibleStudents.map((student) => <StudentRow key={student.id} student={student} onOpen={setSelectedId} />)}</tbody></table>
               )}
             </div>
-          </section>
-          <aside className="side-stack">
-            <BarList title="Batch mix" data={summary?.batchCounts || []} />
-            <BarList title="Class times" data={summary?.timeCounts || []} />
+          </motion.section>
+          <motion.aside className="side-stack" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .4, delay: .26 }}>
+            <AnalyticsChart title="Batch mix" data={analytics.batchCounts} />
+            <AnalyticsChart title="Class times" data={analytics.timeCounts} />
+            <AnalyticsChart title="Course demand" data={analytics.courseCounts} />
             <section className="academy-surface tip-card"><Lightbulb size={18} /><h3>A small desk habit</h3><p>Confirm the family’s preferred time before the first class. A clear welcome sets the rhythm for the whole term.</p></section>
-          </aside>
+           </motion.aside>
         </div>
+        <AcademyContactFooter />
       </main>
       {selectedId && <StudentModal studentId={selectedId} onClose={() => setSelectedId(null)} onChanged={() => refetch()} />}
     </div>
@@ -764,17 +853,7 @@ function SignInPage() {
   return (
     <div className="auth-shell">
       <div className="clerk-frame academy-surface academy-fade-in">
-        <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
-      </div>
-    </div>
-  );
-}
-
-function SignUpPage() {
-  return (
-    <div className="auth-shell">
-      <div className="clerk-frame academy-surface academy-fade-in">
-        <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+        <SignIn routing="path" path={`${basePath}/sign-in`} />
       </div>
     </div>
   );
@@ -787,7 +866,6 @@ function Router() {
         <Route path="/" component={EnrollmentPage} />
         <Route path="/admin" component={AdminPage} />
         <Route path="/sign-in/*?" component={SignInPage} />
-        <Route path="/sign-up/*?" component={SignUpPage} />
         <Route component={NotFound} />
       </Switch>
     </ErrorBoundary>
@@ -802,7 +880,6 @@ function App() {
         proxyUrl={clerkProxyUrl}
         appearance={clerkAppearance}
         signInUrl={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
         routerPush={(to) => window.history.pushState({}, '', stripBase(to))}
         routerReplace={(to) => window.history.replaceState({}, '', stripBase(to))}
       >

@@ -25,6 +25,7 @@ export const StudentInputBatch = {
   Basic: 'Basic',
   Advance: 'Advance',
   Medium: 'Medium',
+  Free_Batch: 'Free Batch',
 } as const;
 
 export type StudentInputTime = typeof StudentInputTime[keyof typeof StudentInputTime];
@@ -79,6 +80,7 @@ export interface DashboardSummary {
   todayAdmissions: number;
   batchCounts: BatchCount[];
   timeCounts: BatchCount[];
+  courseCounts: BatchCount[];
 }
 
 export interface Error {

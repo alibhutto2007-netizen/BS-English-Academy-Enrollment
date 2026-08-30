@@ -13,4 +13,5 @@ export const StudentInputBatch = {
   Basic: 'Basic',
   Advance: 'Advance',
   Medium: 'Medium',
+  Free_Batch: 'Free Batch',
 } as const;

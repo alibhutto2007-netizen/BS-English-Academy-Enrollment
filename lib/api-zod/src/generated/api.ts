@@ -60,7 +60,7 @@ export const ListStudentsResponseItem = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(listStudentsResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(listStudentsResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium']),
+  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
   "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
 }).and(zod.object({
   "id": zod.string(),
@@ -100,7 +100,7 @@ export const CreateStudentBody = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(createStudentBodyHomeAddressMax),
   "courseSubject": zod.string().max(createStudentBodyCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium']),
+  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
   "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
 })
 
@@ -132,7 +132,7 @@ export const CreateStudentResponse = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(createStudentResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(createStudentResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium']),
+  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
   "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
 }).and(zod.object({
   "id": zod.string(),
@@ -175,7 +175,7 @@ export const GetStudentResponse = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(getStudentResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(getStudentResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium']),
+  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
   "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
 }).and(zod.object({
   "id": zod.string(),
@@ -218,7 +218,7 @@ export const UpdateStudentBody = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(updateStudentBodyOneHomeAddressMax),
   "courseSubject": zod.string().max(updateStudentBodyOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium']),
+  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
   "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
 })
 
@@ -250,7 +250,7 @@ export const UpdateStudentResponse = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(updateStudentResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(updateStudentResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium']),
+  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
   "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
 }).and(zod.object({
   "id": zod.string(),
@@ -279,6 +279,10 @@ export const GetDashboardSummaryResponse = zod.object({
   "count": zod.number()
 })),
   "timeCounts": zod.array(zod.object({
+  "label": zod.string(),
+  "count": zod.number()
+})),
+  "courseCounts": zod.array(zod.object({
   "label": zod.string(),
   "count": zod.number()
 }))

@@ -231,7 +231,7 @@ components:
           maxLength: 120
         batch:
           type: string
-          enum: [Basic, Advance, Medium]
+          enum: [Basic, Advance, Medium, "Free Batch"]
         time:
           type: string
           enum: ["2:00 PM - 3:00 PM", "3:00 PM - 4:00 PM", "4:00 PM - 5:00 PM", "5:00 PM - 6:00 PM"]
@@ -259,7 +259,7 @@ components:
           type: number
     DashboardSummary:
       type: object
-      required: [totalStudents, todayAdmissions, batchCounts, timeCounts]
+      required: [totalStudents, todayAdmissions, batchCounts, timeCounts, courseCounts]
       properties:
         totalStudents:
           type: number
@@ -270,6 +270,10 @@ components:
           items:
             $ref: "#/components/schemas/BatchCount"
         timeCounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchCount"
+        courseCounts:
           type: array
           items:
             $ref: "#/components/schemas/BatchCount"
