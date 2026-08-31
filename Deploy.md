@@ -183,7 +183,64 @@ https://your-api-domain.com/api/healthz
 
 The API root `/` may return `404`; that is expected because the application routes are under `/api`.
 
-## 7. Configure Clerk for production
+## 7. Run locally on Windows
+
+The frontend and API are separate processes. Start both of them.
+
+### Terminal 1 — API server
+
+From the repository root:
+
+```powershell
+pnpm --filter @workspace/api-server run dev
+```
+
+The API uses port `8080` by default. Before starting it, configure the backend variables in the Windows environment:
+
+```text
+SUPABASE_URL
+SUPABASE_ANON_KEY
+CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+SESSION_SECRET
+```
+
+### Terminal 2 — frontend
+
+From the repository root:
+
+```powershell
+pnpm --filter @workspace/bs-english-academy run dev
+```
+
+The frontend dev server now proxies `/api` to `http://localhost:8080` automatically. This prevents form requests from going to the Vite server instead of the Express API.
+
+If the API is running on another local port, set `API_PROXY_TARGET` before starting the frontend:
+
+```powershell
+$env:API_PROXY_TARGET = "http://localhost:9000"
+pnpm --filter @workspace/bs-english-academy run dev
+```
+
+Open the frontend URL shown by Vite, usually:
+
+```text
+http://localhost:5173
+```
+
+Open this URL to verify the API connection:
+
+```text
+http://localhost:5173/api/healthz
+```
+
+It should return:
+
+```json
+{"status":"ok"}
+```
+
+## 8. Configure Clerk for production
 
 For the live application:
 
@@ -205,7 +262,7 @@ https://your-project.vercel.app/admin
 
 The browser warning about Clerk development keys is expected during local development. It should not be present after switching the production frontend to live Clerk keys.
 
-## 8. Apply the Supabase Free Batch constraint
+## 9. Apply the Supabase Free Batch constraint
 
 The application supports these batch values:
 
@@ -229,7 +286,7 @@ alter table public.students
 
 Only run this against the correct database. Confirm that the table and constraint names match the current schema before applying it.
 
-## 9. Recommended deployment order
+## 10. Recommended deployment order
 
 Use this order to avoid frontend requests pointing to an unavailable API:
 
@@ -244,7 +301,7 @@ Use this order to avoid frontend requests pointing to an unavailable API:
 9. Apply the Supabase constraint if required.
 10. Redeploy the frontend after changing Vercel environment variables.
 
-## 10. Production testing checklist
+## 11. Production testing checklist
 
 ### Public enrollment
 
@@ -276,7 +333,7 @@ Use this order to avoid frontend requests pointing to an unavailable API:
 - Check Vercel logs and API host logs for errors.
 - Test the application on desktop and mobile widths.
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 ### Vercel build fails because of `PORT` or `BASE_PATH`
 
@@ -327,6 +384,6 @@ This is not necessarily an error. The API does not serve the frontend at `/`. Us
 /api/dashboard/summary
 ```
 
-## 12. Future option: host everything on Vercel
+## 13. Future option: host everything on Vercel
 
 The current recommended setup keeps the Express API as a separate service. If a single Vercel project is required later, the API can be converted to Vercel-compatible serverless functions. That would require a separate API migration and should be tested carefully because Clerk middleware, route prefixes, and Supabase access would change.
