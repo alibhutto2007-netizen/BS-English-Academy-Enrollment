@@ -67,6 +67,19 @@ function toRow(input: Record<string, unknown>) {
   };
 }
 
+function enrollmentStorageError(error: { code?: string; message?: string }) {
+  if (error.code === "23514") {
+    return "Supabase rejected this enrollment because a database constraint is outdated. Apply the latest supabase/schema.sql, including the Free Batch constraint.";
+  }
+  if (error.code === "42P01" || error.code === "PGRST205") {
+    return "The Supabase public.students table is missing. Apply supabase/schema.sql before accepting enrollments.";
+  }
+  if (error.code === "PGRST204") {
+    return "The Supabase students table does not match the current app fields. Apply the latest supabase/schema.sql.";
+  }
+  return "Unable to save enrollment to Supabase.";
+}
+
 router.get("/students", requireAdmin, async (req, res) => {
   const parsed = ListStudentsQueryParams.safeParse(req.query);
   if (!parsed.success) {
@@ -125,7 +138,7 @@ router.post("/students", async (req, res) => {
         "Unable to save enrollment to Supabase",
       );
     }
-    res.status(503).json({ error: "Unable to save enrollment to Supabase." });
+    res.status(503).json({ error: error ? enrollmentStorageError(error) : "Unable to save enrollment to Supabase." });
     return;
   }
   res.status(201).json(CreateStudentResponse.parse(toStudent(data)));

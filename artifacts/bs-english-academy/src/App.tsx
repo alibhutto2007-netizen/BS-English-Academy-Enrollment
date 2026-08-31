@@ -205,6 +205,11 @@ function displayDate(value?: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function getRequestErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  return 'We could not save this enrollment right now. Please try again.';
+}
+
 function ThemeToggle() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
 
@@ -375,8 +380,12 @@ function EnrollmentPage() {
       courseSubject: data.courseSubject.trim(),
     };
     createStudent.mutate({ data: cleanData }, {
-      onSuccess: (student) => setSubmitted(student),
-      onError: () => setServerError('We could not save this enrollment right now. Please try again.'),
+      onSuccess: (student) => {
+        queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        setSubmitted(student);
+      },
+      onError: (error) => setServerError(getRequestErrorMessage(error)),
     });
   }
 
@@ -785,9 +794,9 @@ function AdminDashboard() {
   const [quick, setQuick] = useState('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const params = useMemo(() => ({ search: search || undefined, batch: batch === 'all' ? undefined : batch, time: time === 'all' ? undefined : time, limit: 500 }), [search, batch, time]);
-  const { data: students = [], isLoading, isError, refetch } = useListStudents(params, { query: { queryKey: getListStudentsQueryKey(params) } });
-  const { data: allStudents, isError: allStudentsError } = useListStudents({ limit: 500 }, { query: { queryKey: getListStudentsQueryKey({ limit: 500 }) } });
-  const { data: summary } = useGetDashboardSummary();
+  const { data: students = [], isLoading, isError, refetch } = useListStudents(params, { query: { queryKey: getListStudentsQueryKey(params), refetchOnWindowFocus: true, refetchInterval: 15000 } });
+  const { data: allStudents, isError: allStudentsError } = useListStudents({ limit: 500 }, { query: { queryKey: getListStudentsQueryKey({ limit: 500 }), refetchOnWindowFocus: true, refetchInterval: 15000 } });
+  const { data: summary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey(), refetchOnWindowFocus: true, refetchInterval: 15000 } });
   const analytics = useMemo(() => {
     if (allStudents && !allStudentsError) return summarizeStudents(allStudents);
     return summary ?? summarizeStudents([]);
