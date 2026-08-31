@@ -37,6 +37,8 @@ import {
   getGetDashboardSummaryQueryKey,
   getGetStudentQueryKey,
   getListStudentsQueryKey,
+  setAuthTokenGetter,
+  setBaseUrl,
   useCreateStudent,
   useDeleteStudent,
   useGetDashboardSummary,
@@ -217,6 +219,18 @@ function ThemeToggle() {
       <span>{dark ? 'Day' : 'Night'}</span>
     </button>
   );
+}
+
+function ApiConfiguration() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    setBaseUrl(import.meta.env.VITE_API_BASE_URL || null);
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  return null;
 }
 
 function Brand({ compact = false }: { compact?: boolean }) {
@@ -883,6 +897,7 @@ function App() {
         routerPush={(to) => window.history.pushState({}, '', stripBase(to))}
         routerReplace={(to) => window.history.replaceState({}, '', stripBase(to))}
       >
+        <ApiConfiguration />
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <Router />
