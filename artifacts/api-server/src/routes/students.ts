@@ -68,6 +68,12 @@ function toRow(input: Record<string, unknown>) {
 }
 
 function enrollmentStorageError(error: { code?: string; message?: string }) {
+  if (
+    error.code === "540" ||
+    /project.*paused|paused.*project/i.test(error.message ?? "")
+  ) {
+    return "The academy database is temporarily waking up. Please wait a moment and submit again.";
+  }
   if (error.code === "23514") {
     return "Supabase rejected this enrollment because a database constraint is outdated. Apply the latest supabase/schema.sql, including the Free Batch constraint.";
   }

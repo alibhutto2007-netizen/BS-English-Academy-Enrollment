@@ -67,7 +67,7 @@ import { isValidDateValue, parseLocalDate, sanitizeName, sanitizePhone, toLocalD
 const queryClient = new QueryClient();
 const TODAY = toLocalDateValue(new Date());
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-const academyLogo = `${basePath}/logo.svg`;
+const academyLogo = `${basePath}/logo.png`;
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -144,7 +144,7 @@ const clerkAppearance = {
   options: {
     logoPlacement: 'inside' as const,
     logoLinkUrl: basePath || '/',
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${window.location.origin}${basePath}/logo.png`,
     socialButtonsPlacement: 'bottom' as const,
     socialButtonsVariant: 'blockButton' as const,
   },
@@ -157,7 +157,7 @@ const clerkAppearance = {
     colorInput: 'hsl(40 25% 89%)',
     colorInputForeground: 'hsl(221 30% 16%)',
     colorNeutral: 'hsl(39 22% 85%)',
-    fontFamily: 'DM Sans, sans-serif',
+    fontFamily: 'Plus Jakarta Sans, sans-serif',
     borderRadius: '0.7rem',
   },
   elements: {

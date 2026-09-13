@@ -10,8 +10,16 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { publicEnrollmentRateLimit } from "./middlewares/publicEnrollmentRateLimit";
+import { securityHeaders } from "./middlewares/securityHeaders";
 
 const app: Express = express();
+const allowedOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.set("trust proxy", 1);
 
 app.use(
   pinoHttp({
@@ -33,7 +41,18 @@ app.use(
   }),
 );
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
-app.use(cors());
+app.use(securityHeaders);
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(null, false);
+    },
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+    maxAge: 86400,
+  }),
+);
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
@@ -42,8 +61,9 @@ app.use(
     ),
   })),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "32kb" }));
+app.use(express.urlencoded({ extended: true, limit: "32kb" }));
+app.use("/api/students", publicEnrollmentRateLimit);
 
 app.use("/api", router);
 
