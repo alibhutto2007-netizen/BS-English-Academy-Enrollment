@@ -54,7 +54,7 @@ import {
   useAuth,
   useClerk,
 } from '@clerk/react';
-import { publishableKeyFromHost } from '@clerk/react/internal';
+
 import { shadcn } from '@clerk/themes';
 import { DatePickerField, FormSelect, NameInput, NumericInput } from '@/components/academy-form-controls';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -68,11 +68,7 @@ const queryClient = new QueryClient();
 const TODAY = toLocalDateValue(new Date());
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const academyLogo = `${basePath}/logo.png`;
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const BATCHES = ['Basic', 'Advance', 'Medium', 'Free Batch'] as const;
 const TIMES = ['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'] as const;
 const BATCH_LABELS: Record<(typeof BATCHES)[number], string> = {
