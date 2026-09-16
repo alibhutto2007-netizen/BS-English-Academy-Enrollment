@@ -900,7 +900,7 @@ function App() {
     <WouterRouter base={basePath}>
       <ClerkProvider
         publishableKey={clerkPubKey}
-        proxyUrl={clerkProxyUrl}
+
         appearance={clerkAppearance}
         signInUrl={`${basePath}/sign-in`}
         routerPush={(to) => window.history.pushState({}, '', stripBase(to))}
