@@ -18,17 +18,61 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 
 const studentColumns =
-  "id,student_name,current_class,last_academy,school_college,contact_number,date_of_birth,date_of_admission,gender,home_address,course_subject,batch,time,created_at";
+  "id,student_name,current_class,last_academy,school_college,contact_number,date_of_birth,date_of_admission,gender,home_address,course_subject,batch,time,how_heard_about_us,created_at";
 
-const batchTimes: Record<string, string> = {
-  Basic: "2:00 PM - 3:00 PM",
-  Advance: "3:00 PM - 4:00 PM",
-  Medium: "4:00 PM - 5:00 PM",
-  "Free Batch": "5:00 PM - 6:00 PM",
-};
+/**
+ * Validates that batch+time combo exists in the database.
+ * Checks the actual courses→batches→timings chain instead of hardcoded values.
+ */
+async function validateBatchTimeCombination(batch: string, time: string) {
+  if (!batch || !time) return false;
 
-function hasValidBatchTime(batch: string, time: string) {
-  return batchTimes[batch] === time;
+  // Look up the batch by name
+  const { data: batchData, error: batchError } = await supabase
+    .from("batches")
+    .select("id,course_id")
+    .eq("name", batch.trim())
+    .eq("is_active", true)
+    .maybeSingle();
+
+  logger.info({ batch, time, batchData, batchError }, "validateBatchTime: batch lookup result");
+
+  if (batchError || !batchData) {
+    // Batch not found — reject
+    logger.warn(
+      { batch, time, batchError },
+      "Batch not found in validation - rejecting",
+    );
+    return false;
+  }
+
+  // Parse the time string "02:00 PM - 03:00 PM" into start and end
+  const timeParts = time.split(" - ");
+  const startTime = timeParts[0]?.trim();
+  const endTime = timeParts[1]?.trim();
+
+  // Look up the timing for this batch with matching start/end times
+  let timingQuery = supabase
+    .from("timings")
+    .select("id,batch_id,start_time,end_time")
+    .eq("batch_id", batchData.id)
+    .eq("is_active", true);
+
+  if (startTime) timingQuery = timingQuery.eq("start_time", startTime);
+  if (endTime) timingQuery = timingQuery.eq("end_time", endTime);
+
+  const { data: timingData, error: timingError } = await timingQuery.maybeSingle();
+
+  logger.info({ batch, time, timingData, timingError }, "validateBatchTime: timing lookup result");
+
+  if (!timingError && timingData) return true;
+
+  // Timing not found for this batch — reject
+  logger.warn(
+    { batch, time, batchId: batchData.id },
+    "Timing not found for batch - rejecting",
+  );
+  return false;
 }
 
 function toStudent(row: Record<string, unknown>) {
@@ -46,6 +90,7 @@ function toStudent(row: Record<string, unknown>) {
     courseSubject: row.course_subject,
     batch: row.batch,
     time: row.time,
+    howHeardAboutUs: row.how_heard_about_us,
     createdAt: row.created_at,
   };
 }
@@ -64,6 +109,7 @@ function toRow(input: Record<string, unknown>) {
     course_subject: input.courseSubject,
     batch: input.batch,
     time: input.time,
+    how_heard_about_us: input.howHeardAboutUs,
   };
 }
 
@@ -127,7 +173,8 @@ router.post("/students", async (req, res) => {
     res.status(400).json({ error: "Please complete all required fields." });
     return;
   }
-  if (!hasValidBatchTime(parsed.data.batch, parsed.data.time)) {
+  const valid = await validateBatchTimeCombination(parsed.data.batch, parsed.data.time);
+  if (!valid) {
     res.status(400).json({ error: "That batch and class time combination is not available." });
     return;
   }
@@ -175,7 +222,8 @@ router.patch("/students/:id", requireAdmin, async (req, res) => {
     res.status(400).json({ error: "Invalid student details." });
     return;
   }
-  if (!hasValidBatchTime(body.data.batch, body.data.time)) {
+  const valid = await validateBatchTimeCombination(body.data.batch, body.data.time);
+  if (!valid) {
     res.status(400).json({ error: "That batch and class time combination is not available." });
     return;
   }

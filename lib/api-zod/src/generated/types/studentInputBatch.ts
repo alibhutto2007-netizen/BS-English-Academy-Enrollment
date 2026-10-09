@@ -4,14 +4,8 @@
  * Api
  * BS English Virtual Academy enrollment and administration API
  * OpenAPI spec version: 0.1.0
+ * 
+ * Modified: Removed enum constraint to allow dynamic batch names from database
  */
 
-export type StudentInputBatch = typeof StudentInputBatch[keyof typeof StudentInputBatch];
-
-
-export const StudentInputBatch = {
-  Basic: 'Basic',
-  Advance: 'Advance',
-  Medium: 'Medium',
-  Free_Batch: 'Free Batch',
-} as const;
+export type StudentInputBatch = string;

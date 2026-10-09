@@ -4,14 +4,8 @@
  * Api
  * BS English Virtual Academy enrollment and administration API
  * OpenAPI spec version: 0.1.0
+ * 
+ * Modified: Removed enum constraint to allow dynamic timing values from database
  */
 
-export type StudentInputTime = typeof StudentInputTime[keyof typeof StudentInputTime];
-
-
-export const StudentInputTime = {
-  '2:00_PM_-_3:00_PM': '2:00 PM - 3:00 PM',
-  '3:00_PM_-_4:00_PM': '3:00 PM - 4:00 PM',
-  '4:00_PM_-_5:00_PM': '4:00 PM - 5:00 PM',
-  '5:00_PM_-_6:00_PM': '5:00 PM - 6:00 PM',
-} as const;
+export type StudentInputTime = string;

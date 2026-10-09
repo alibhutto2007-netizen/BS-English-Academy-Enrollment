@@ -286,7 +286,14 @@
 .filter-wrap { padding: .85rem 1.15rem; border-bottom: 1px solid hsl(var(--border)); display: flex; gap: .5rem; flex-wrap: wrap; }
 .filter-search { position: relative; flex: 1 1 180px; }
 .filter-search svg { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: hsl(var(--muted-foreground)); }
-.filter-search input { padding-left: 2.15rem; }
+.filter-search input { padding-left: 2.15rem; padding-right: 2rem; width: 100%; }
+.search-clear-btn { position: absolute; right: .6rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: hsl(var(--muted-foreground)); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 2px; border-radius: 4px; transition: color .15s ease; }
+.search-clear-btn:hover { color: hsl(var(--foreground)); }
+.search-suggestions-box { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 50; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) - 2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1); overflow: hidden; padding: .35rem 0; max-height: 280px; overflow-y: auto; }
+.search-suggestion-item { display: flex; align-items: center; gap: .65rem; padding: .55rem .85rem; font-size: .8rem; color: hsl(var(--foreground)); cursor: pointer; transition: background-color .15s ease; width: 100%; text-align: left; border: none; background: transparent; }
+.search-suggestion-item:hover, .search-suggestion-item.highlighted { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+.search-suggestion-icon { position: static !important; transform: none !important; color: hsl(var(--muted-foreground)); flex-shrink: 0; }
+.search-suggestion-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .filter-wrap select { width: auto; min-width: 130px; }
 .quick-views { display: flex; gap: .42rem; flex-wrap: wrap; margin-bottom: .85rem; }
 .quick-views button { border: 1px solid hsl(var(--border)); background: transparent; color: hsl(var(--muted-foreground)); padding: .42rem .65rem; border-radius: 999px; font-size: .69rem; font-weight: 700; }

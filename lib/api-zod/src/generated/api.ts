@@ -47,6 +47,8 @@ export const listStudentsResponseOneHomeAddressMax = 500;
 
 export const listStudentsResponseOneCourseSubjectMax = 120;
 
+export const listStudentsResponseOneHowHeardAboutUsMax = 200;
+
 
 
 export const ListStudentsResponseItem = zod.object({
@@ -60,8 +62,9 @@ export const ListStudentsResponseItem = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(listStudentsResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(listStudentsResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
-  "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
+  "batch": zod.string().min(1),
+  "time": zod.string().min(1),
+  "howHeardAboutUs": zod.string().min(1).max(listStudentsResponseOneHowHeardAboutUsMax)
 }).and(zod.object({
   "id": zod.string(),
   "createdAt": zod.coerce.date()
@@ -87,6 +90,8 @@ export const createStudentBodyHomeAddressMax = 500;
 
 export const createStudentBodyCourseSubjectMax = 120;
 
+export const createStudentBodyHowHeardAboutUsMax = 200;
+
 
 
 export const CreateStudentBody = zod.object({
@@ -100,8 +105,9 @@ export const CreateStudentBody = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(createStudentBodyHomeAddressMax),
   "courseSubject": zod.string().max(createStudentBodyCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
-  "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
+  "batch": zod.string().min(1),
+  "time": zod.string().min(1),
+  "howHeardAboutUs": zod.string().min(1).max(createStudentBodyHowHeardAboutUsMax)
 })
 
 export const createStudentResponseOneStudentNameMin = 2;
@@ -119,6 +125,8 @@ export const createStudentResponseOneHomeAddressMax = 500;
 
 export const createStudentResponseOneCourseSubjectMax = 120;
 
+export const createStudentResponseOneHowHeardAboutUsMax = 200;
+
 
 
 export const CreateStudentResponse = zod.object({
@@ -132,8 +140,9 @@ export const CreateStudentResponse = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(createStudentResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(createStudentResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
-  "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
+  "batch": zod.string().min(1),
+  "time": zod.string().min(1),
+  "howHeardAboutUs": zod.string().min(1).max(createStudentResponseOneHowHeardAboutUsMax)
 }).and(zod.object({
   "id": zod.string(),
   "createdAt": zod.coerce.date()
@@ -162,6 +171,8 @@ export const getStudentResponseOneHomeAddressMax = 500;
 
 export const getStudentResponseOneCourseSubjectMax = 120;
 
+export const getStudentResponseOneHowHeardAboutUsMax = 200;
+
 
 
 export const GetStudentResponse = zod.object({
@@ -175,8 +186,9 @@ export const GetStudentResponse = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(getStudentResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(getStudentResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
-  "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
+  "batch": zod.string().min(1),
+  "time": zod.string().min(1),
+  "howHeardAboutUs": zod.string().min(1).max(getStudentResponseOneHowHeardAboutUsMax)
 }).and(zod.object({
   "id": zod.string(),
   "createdAt": zod.coerce.date()
@@ -205,6 +217,8 @@ export const updateStudentBodyOneHomeAddressMax = 500;
 
 export const updateStudentBodyOneCourseSubjectMax = 120;
 
+export const updateStudentBodyOneHowHeardAboutUsMax = 200;
+
 
 
 export const UpdateStudentBody = zod.object({
@@ -218,8 +232,9 @@ export const UpdateStudentBody = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(updateStudentBodyOneHomeAddressMax),
   "courseSubject": zod.string().max(updateStudentBodyOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
-  "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
+  "batch": zod.string().min(1),
+  "time": zod.string().min(1),
+  "howHeardAboutUs": zod.string().min(1).max(updateStudentBodyOneHowHeardAboutUsMax)
 })
 
 export const updateStudentResponseOneStudentNameMin = 2;
@@ -237,6 +252,8 @@ export const updateStudentResponseOneHomeAddressMax = 500;
 
 export const updateStudentResponseOneCourseSubjectMax = 120;
 
+export const updateStudentResponseOneHowHeardAboutUsMax = 200;
+
 
 
 export const UpdateStudentResponse = zod.object({
@@ -250,8 +267,9 @@ export const UpdateStudentResponse = zod.object({
   "gender": zod.enum(['Female', 'Male', 'Other']),
   "homeAddress": zod.string().max(updateStudentResponseOneHomeAddressMax),
   "courseSubject": zod.string().max(updateStudentResponseOneCourseSubjectMax),
-  "batch": zod.enum(['Basic', 'Advance', 'Medium', 'Free Batch']),
-  "time": zod.enum(['2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'])
+  "batch": zod.string().min(1),
+  "time": zod.string().min(1),
+  "howHeardAboutUs": zod.string().min(1).max(updateStudentResponseOneHowHeardAboutUsMax)
 }).and(zod.object({
   "id": zod.string(),
   "createdAt": zod.coerce.date()

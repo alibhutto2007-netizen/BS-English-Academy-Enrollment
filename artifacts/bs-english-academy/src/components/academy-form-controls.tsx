@@ -8,6 +8,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -133,6 +134,7 @@ type FormSelectProps = BaseControlProps & {
   error?: string;
   options: { value: string; label: string }[];
   testId?: string;
+  disabled?: boolean;
 };
 
 export function FormSelect({
@@ -145,16 +147,22 @@ export function FormSelect({
   error,
   options,
   testId,
+  disabled,
 }: FormSelectProps) {
   const describedBy = error ? `${id}-error` : undefined;
+  const hasOptions = options && options.length > 0;
   return (
     <div>
       <label className="academy-label" htmlFor={id}>{label}</label>
-      <Select value={value} onValueChange={onValueChange}>
+      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger
           id={id}
-          className={cn('academy-input form-select-trigger', error && 'invalid')}
-          aria-invalid={Boolean(error)}
+          className={cn(
+            'flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring data-[state=open]:z-10 data-[state=closed]:z-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+            error && 'invalid',
+            disabled && 'disabled',
+          )}
+          aria-invalid={Boolean(error) || disabled}
           aria-describedby={describedBy}
           onBlur={onBlur}
           data-testid={testId}
@@ -162,12 +170,64 @@ export function FormSelect({
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {options.map((option) => (
-            <SelectItem value={option.value} key={option.value}>{option.label}</SelectItem>
-          ))}
+          {hasOptions ? (
+            <>
+              <SelectSeparator />
+              {options.map((option) => (
+                <SelectItem value={option.value} key={option.value}>{option.label}</SelectItem>
+              ))}
+              <SelectSeparator />
+            </>
+          ) : (
+            <div className="p-2 text-sm text-muted-foreground">
+              {disabled
+                ? 'Selection disabled'
+                : options
+                ? 'No options available'
+                : placeholder}
+            </div>
+          )}
         </SelectContent>
       </Select>
       {error && <p className="academy-help" id={describedBy}>{error}</p>}
     </div>
+  );
+}
+
+type FilterSelectProps = {
+  id: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  options: { value: string; label: string }[];
+  testId?: string;
+};
+
+export function FilterSelect({ id, value, onValueChange, placeholder = 'All', options, testId }: FilterSelectProps) {
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger
+        id={id}
+        className={cn(
+          'h-9 min-w-[140px] items-center justify-between whitespace-nowrap rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring data-[state=open]:z-10 [&>span]:line-clamp-1',
+        )}
+        data-testid={testId}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.length > 0 ? (
+          <>
+            <SelectSeparator />
+            {options.map((option) => (
+              <SelectItem value={option.value} key={option.value}>{option.label}</SelectItem>
+            ))}
+            <SelectSeparator />
+          </>
+        ) : (
+          <div className="p-2 text-sm text-muted-foreground">No options</div>
+        )}
+      </SelectContent>
+    </Select>
   );
 }

@@ -197,6 +197,7 @@ components:
         - courseSubject
         - batch
         - time
+        - howHeardAboutUs
       properties:
         studentName:
           type: string
@@ -231,10 +232,14 @@ components:
           maxLength: 120
         batch:
           type: string
-          enum: [Basic, Advance, Medium, "Free Batch"]
+          maxLength: 80
         time:
           type: string
-          enum: ["2:00 PM - 3:00 PM", "3:00 PM - 4:00 PM", "4:00 PM - 5:00 PM", "5:00 PM - 6:00 PM"]
+          maxLength: 80
+        howHeardAboutUs:
+          type: string
+          minLength: 1
+          maxLength: 200
     StudentUpdate:
       allOf:
         - $ref: "#/components/schemas/StudentInput"

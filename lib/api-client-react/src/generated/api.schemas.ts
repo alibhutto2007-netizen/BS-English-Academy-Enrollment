@@ -18,25 +18,15 @@ export const StudentInputGender = {
   Other: 'Other',
 } as const;
 
-export type StudentInputBatch = typeof StudentInputBatch[keyof typeof StudentInputBatch];
+/**
+ * Modified: Removed enum constraint to allow dynamic batch names from database
+ */
+export type StudentInputBatch = string;
 
-
-export const StudentInputBatch = {
-  Basic: 'Basic',
-  Advance: 'Advance',
-  Medium: 'Medium',
-  Free_Batch: 'Free Batch',
-} as const;
-
-export type StudentInputTime = typeof StudentInputTime[keyof typeof StudentInputTime];
-
-
-export const StudentInputTime = {
-  '2:00_PM_-_3:00_PM': '2:00 PM - 3:00 PM',
-  '3:00_PM_-_4:00_PM': '3:00 PM - 4:00 PM',
-  '4:00_PM_-_5:00_PM': '4:00 PM - 5:00 PM',
-  '5:00_PM_-_6:00_PM': '5:00 PM - 6:00 PM',
-} as const;
+/**
+ * Modified: Removed enum constraint to allow dynamic timing values from database
+ */
+export type StudentInputTime = string;
 
 export interface StudentInput {
   /**
@@ -61,6 +51,11 @@ export interface StudentInput {
   courseSubject: string;
   batch: StudentInputBatch;
   time: StudentInputTime;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  howHeardAboutUs: string;
 }
 
 export type StudentUpdate = StudentInput;

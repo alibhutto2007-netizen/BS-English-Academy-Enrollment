@@ -32,4 +32,9 @@ export interface StudentInput {
   courseSubject: string;
   batch: StudentInputBatch;
   time: StudentInputTime;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  howHeardAboutUs: string;
 }
