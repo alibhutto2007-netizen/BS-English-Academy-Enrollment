@@ -164,7 +164,16 @@ router.get("/students", requireAdmin, async (req, res) => {
     res.status(503).json({ error: "Unable to load students from Supabase." });
     return;
   }
-  res.json(ListStudentsResponse.parse((data ?? []).map(toStudent)));
+  const listed = ListStudentsResponse.safeParse((data ?? []).map(toStudent));
+  if (!listed.success) {
+    logger.error(
+      { validation: listed.error.issues },
+      "Student records failed response validation. Check stored data for unexpected values.",
+    );
+    res.status(500).json({ error: "Some student records could not be validated. Contact support." });
+    return;
+  }
+  res.json(listed.data);
 });
 
 router.post("/students", async (req, res) => {
